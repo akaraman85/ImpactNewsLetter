@@ -1,6 +1,6 @@
 import { NewsletterView } from "@/components/newsletter";
-import { issueContent, listAssets } from "@/lib/data";
-import { getIssue, getSettings } from "@/lib/data";
+import { placeUnusedAssets } from "@/lib/content";
+import { getIssue, getSettings, issueContent, listAssets } from "@/lib/data";
 import { formatEventDate } from "@/lib/format";
 import { notFound } from "next/navigation";
 
@@ -11,7 +11,10 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
   const issue = await getIssue(id);
   if (!issue) notFound();
   const [settings, media] = await Promise.all([getSettings(), listAssets(id)]);
-  const content = issueContent(issue);
+  const content = placeUnusedAssets(
+    issueContent(issue),
+    media.filter((asset) => asset.included).map((asset) => asset.id),
+  );
   return (
     <NewsletterView
       programName={settings.programName}

@@ -47,8 +47,8 @@ export function DatabaseNotice() {
         <p className="kicker">Impact Newsletter</p>
         <h1>The newsletter database is not connected yet.</h1>
         <p className="muted">
-          This app stores issues in Neon. Add DATABASE_URL and AUTH_SECRET to the Vercel project,
-          then reload.
+          This app stores issues in Neon. In the Vercel project, open Storage, create a Neon
+          database, and set AUTH_SECRET. Then reload.
         </p>
       </section>
     </main>

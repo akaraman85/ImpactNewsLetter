@@ -269,7 +269,13 @@ export default async function IssuePage({
             }
             return (
               <div className="stack" key={link.id}>
-                {url ? <p className="link-box">{url}</p> : <p className="muted">This link cannot be shown. Create a new one.</p>}
+                {url ? (
+                  <a className="link-box" href={url}>
+                    {url}
+                  </a>
+                ) : (
+                  <p className="muted">This link cannot be shown. Create a new one.</p>
+                )}
                 <p className="muted">
                   {link.viewCount} views
                   {link.expiresAt ? ` · expires ${link.expiresAt.toLocaleDateString("en-US")}` : " · no expiry"}

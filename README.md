@@ -30,6 +30,12 @@ To browse a private folder:
 
 Then put a folder path such as `/Impact/Field Day`, or a shared folder link, on the issue and choose Import folder.
 
+## Deploy
+
+The app is deployed on Vercel as `impact-newsletter`. Family pages are not behind Vercel Authentication. Staff login and the link key are the gates.
+
+Neon is installed on the team. Create a database from the project Storage page so `DATABASE_URL` is added for this app, and set `AUTH_SECRET`. Existing Neon projects used by other apps stay separate.
+
 ## Environment
 
 Copy `.env.example` to `.env.local`.

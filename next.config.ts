@@ -13,10 +13,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/v/:path*",
-        headers: [
-          { key: "X-Robots-Tag", value: "noindex, nofollow" },
-          { key: "Referrer-Policy", value: "no-referrer" },
-        ],
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
     ];
   },

@@ -12,7 +12,8 @@ export function formatEventDate(value: string | null | undefined) {
 
 export function requestOrigin(headerStore: Headers) {
   const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "localhost:3000";
-  const proto =
-    headerStore.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  const forwarded = headerStore.get("x-forwarded-proto");
+  const local = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(host);
+  const proto = forwarded ?? (local ? "http" : "https");
   return `${proto}://${host}`;
 }

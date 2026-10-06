@@ -65,6 +65,17 @@ export function placeUnusedAssets(
   const used = new Set(content.sections.flatMap((section) => section.assetIds));
   const missing = includedIds.filter((id) => !used.has(id));
   if (missing.length === 0) return content;
+  const more = content.sections.find((section) => section.id === "more-from-the-day");
+  if (more) {
+    return {
+      ...content,
+      sections: content.sections.map((section) =>
+        section.id === "more-from-the-day"
+          ? { ...section, assetIds: [...section.assetIds, ...missing] }
+          : section,
+      ),
+    };
+  }
   return {
     ...content,
     sections: [
