@@ -36,11 +36,12 @@ export default async function NewIssuePage({
         <input
           name="dropboxFolderPath"
           defaultValue={settings.dropboxFolderPath}
-          placeholder="/Impact/Field Day"
+          placeholder="/Impact/Field Day or a shared folder link"
         />
       </label>
       <p className="muted">
         Optional. After you create the issue, Import folder pulls photos and videos from this path.
+        A shared folder link that anyone can open works without connecting Dropbox.
       </p>
       <SubmitButton pendingLabel="Creating…">Create issue</SubmitButton>
     </form>

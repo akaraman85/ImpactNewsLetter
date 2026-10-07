@@ -3,13 +3,20 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { draftNewsletter } from "./ai";
 import { clearStaffSession, grantViewer, requireStaff, startStaffSession } from "./auth";
 import { emptyContent, type NewsletterContent } from "./content";
 import { findStaffByEmail, getIssue, getSettings, listAssets } from "./data";
 import { dropboxAccessToken } from "./dropbox-account";
-import { isDropboxUrl, listDropboxMedia, mediaKind } from "./dropbox";
+import {
+  isDropboxUrl,
+  isFolderLink,
+  listDropboxMedia,
+  listPublicDropboxMedia,
+  mediaKind,
+  type DropboxFile,
+} from "./dropbox";
 import { withDb } from "./db";
 import {
   encryptSecret,
@@ -204,6 +211,16 @@ export async function saveIssueDetails(formData: FormData) {
   redirect(`/admin/issues/${id}`);
 }
 
+function importFailure(error: unknown) {
+  if (error instanceof Error) {
+    const message = error.message.trim();
+    if (message && !message.startsWith("{") && !message.includes("error_summary")) {
+      return message.slice(0, 240);
+    }
+  }
+  return "Dropbox could not open that folder. Check the path and the connection.";
+}
+
 export async function importDropboxFolder(formData: FormData) {
   await requireStaff();
   const id = text(formData, "id");
@@ -211,16 +228,36 @@ export async function importDropboxFolder(formData: FormData) {
   if (!issue) bounce("/admin", "That issue is gone.");
   const folder = text(formData, "dropboxFolderPath") || issue.dropboxFolderPath;
   if (!folder) bounce(`/admin/issues/${id}`, "Add a Dropbox folder path or shared folder link.");
-  let files;
+  let files: DropboxFile[] | undefined;
   try {
     const token = await dropboxAccessToken();
-    if (!token) bounce(`/admin/issues/${id}`, "Connect Dropbox in Settings before importing a folder.");
-    files = await listDropboxMedia(token, folder);
-  } catch {
-    bounce(`/admin/issues/${id}`, "Dropbox could not open that folder. Check the path and the connection.");
+    if (token) {
+      try {
+        files = await listDropboxMedia(token, folder);
+      } catch (error) {
+        unstable_rethrow(error);
+        if (!isFolderLink(folder)) throw error;
+        files = [];
+      }
+      if (files.length === 0 && isFolderLink(folder)) {
+        files = await listPublicDropboxMedia(folder);
+      }
+    } else if (isFolderLink(folder)) {
+      files = await listPublicDropboxMedia(folder);
+    } else {
+      bounce(`/admin/issues/${id}`, "Connect Dropbox in Settings before importing a private folder.");
+    }
+  } catch (error) {
+    unstable_rethrow(error);
+    bounce(`/admin/issues/${id}`, importFailure(error));
+  }
+  if (!files || files.length === 0) {
+    bounce(`/admin/issues/${id}`, "That folder does not have any photos or videos.");
   }
   const existing = await listAssets(id);
-  const known = new Set(existing.map((asset) => asset.dropboxId).filter(Boolean));
+  const known = new Set(
+    existing.flatMap((asset) => [asset.dropboxId, asset.sourceUrl].filter((value) => Boolean(value))),
+  );
   let order = existing.reduce((max, asset) => Math.max(max, asset.sortOrder), 0);
   await withDb(async (db) => {
     await db
@@ -228,7 +265,7 @@ export async function importDropboxFolder(formData: FormData) {
       .set({ dropboxFolderPath: folder.slice(0, 500), updatedAt: new Date() })
       .where(eq(issues.id, id));
     for (const file of files) {
-      if (known.has(file.id)) continue;
+      if (known.has(file.id) || (file.sourceUrl && known.has(file.sourceUrl))) continue;
       order += 1;
       await db.insert(assets).values({
         id: randomUUID(),
@@ -238,7 +275,8 @@ export async function importDropboxFolder(formData: FormData) {
         kind: file.kind,
         name: file.name,
         dropboxId: file.id,
-        dropboxPath: file.path,
+        dropboxPath: file.sourceUrl ? null : file.path,
+        sourceUrl: file.sourceUrl?.slice(0, 1000) ?? null,
         caption: "",
       });
     }

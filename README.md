@@ -21,7 +21,7 @@ If the staff table is ever empty, set `ADMIN_SETUP_CODE` to at least 12 characte
 
 ## Dropbox
 
-Until a Dropbox app is connected, paste a shared file link on the issue. Those links have to already be reachable by anyone who has them.
+Until a Dropbox app is connected, paste a shared file link on the issue, or import a shared folder link that anyone can open. Those links have to already be reachable by anyone who has them.
 
 To browse a private folder:
 

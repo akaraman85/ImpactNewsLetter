@@ -57,7 +57,10 @@ export default async function SettingsPage({
         {settings.dropboxAccountLabel ? (
           <p>Connected as {settings.dropboxAccountLabel}.</p>
         ) : (
-          <p className="muted">Not connected yet. You can still paste individual Dropbox file links on an issue.</p>
+          <p className="muted">
+            Not connected yet. A public shared folder link can still be imported on an issue, and
+            you can paste individual file links.
+          </p>
         )}
         <p className="muted">
           Create a Dropbox app with scopes <code>files.metadata.read</code>,{" "}
