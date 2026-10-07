@@ -165,6 +165,9 @@ export async function createIssue(formData: FormData) {
   const notes = text(formData, "notes");
   if (title.length < 2) bounce("/admin/issues/new", "Give the issue a title.");
   const settings = await getSettings();
+  const folder = formData.has("dropboxFolderPath")
+    ? text(formData, "dropboxFolderPath")
+    : settings.dropboxFolderPath;
   const id = randomUUID();
   await withDb(async (db) => {
     await db.insert(issues).values({
@@ -174,7 +177,7 @@ export async function createIssue(formData: FormData) {
       notes: notes.slice(0, 8000),
       status: "draft",
       content: emptyContent(title.slice(0, 160)),
-      dropboxFolderPath: settings.dropboxFolderPath,
+      dropboxFolderPath: folder.slice(0, 500),
     });
   });
   redirect(`/admin/issues/${id}`);
