@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { emptyContent, parseContent, placeUnusedAssets } from "./content.ts";
-import { dropboxRawUrl, isFolderLink, mediaKind } from "./dropbox.ts";
+import {
+  canonicalSharedLink,
+  dropboxRawUrl,
+  isFolderLink,
+  mediaFromSharedFolderHtml,
+  mediaKind,
+} from "./dropbox.ts";
 import { requestOrigin } from "./format.ts";
 
 test("parseContent keeps known sections and ignores junk", () => {
@@ -78,4 +84,37 @@ test("folder links and file kinds are recognized", () => {
   assert.equal(mediaKind("relay.JPG"), "image");
   assert.equal(mediaKind("game.mp4"), "video");
   assert.equal(mediaKind("notes.pdf"), null);
+});
+
+test("shared links keep rlkey and drop the website tracking parameters", () => {
+  const canonical = canonicalSharedLink(
+    "https://www.dropbox.com/scl/fo/abc/folder?rlkey=stem&st=knarchgi&dl=0",
+  );
+  const url = new URL(canonical);
+  assert.equal(url.searchParams.get("rlkey"), "stem");
+  assert.equal(url.searchParams.get("st"), null);
+  assert.equal(url.searchParams.get("dl"), null);
+});
+
+test("a public folder page lists its photos and videos", () => {
+  const fileUrl =
+    "https://www.dropbox.com/scl/fo/abc/AAMd0m3E0eg_Ya77lHZdwEk/IMG_1802.mov?rlkey=stem&dl=0";
+  const html = `<script>registerStreamedPrefetch("abc", "${Buffer.from(
+    `folder ${fileUrl} notes.pdf \\page_size\\": 75, \\"page_offset\\": 1`,
+  ).toString("base64")}")</script>`;
+  const listed = mediaFromSharedFolderHtml(html);
+  assert.equal(listed.truncated, false);
+  assert.equal(listed.files.length, 1);
+  assert.equal(listed.files[0]?.name, "IMG_1802.mov");
+  assert.equal(listed.files[0]?.kind, "video");
+  assert.equal(listed.files[0]?.sourceUrl, "https://www.dropbox.com/scl/fo/abc/AAMd0m3E0eg_Ya77lHZdwEk/IMG_1802.mov?rlkey=stem");
+});
+
+test("a full public page is marked truncated", () => {
+  const fileUrl = "https://www.dropbox.com/scl/fo/abc/token/photo.jpg?rlkey=stem&dl=0";
+  const html = Buffer.from(`\\"page_size\\": 1, \\"page_offset\\": 1 ${fileUrl}`).toString("utf8");
+  const wrapped = `<script>registerStreamedPrefetch("abc", "${Buffer.from(html).toString("base64")}")</script>`;
+  const listed = mediaFromSharedFolderHtml(wrapped);
+  assert.equal(listed.truncated, true);
+  assert.equal(listed.files[0]?.name, "photo.jpg");
 });
