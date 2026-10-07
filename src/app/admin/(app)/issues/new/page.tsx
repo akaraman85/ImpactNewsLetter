@@ -1,6 +1,7 @@
 import { Notice } from "@/components/admin-shell";
 import { SubmitButton } from "@/components/submit-button";
 import { createIssue } from "@/lib/actions";
+import { getSettings } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,7 @@ export default async function NewIssuePage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const { error } = await searchParams;
+  const [{ error }, settings] = await Promise.all([searchParams, getSettings()]);
   return (
     <form className="panel stack" action={createIssue}>
       <p className="kicker">New issue</p>
@@ -30,6 +31,17 @@ export default async function NewIssuePage({
           placeholder="Third grade won the relay. Lunch moved inside after the rain."
         />
       </label>
+      <label className="field">
+        <span>Dropbox folder path or shared folder link</span>
+        <input
+          name="dropboxFolderPath"
+          defaultValue={settings.dropboxFolderPath}
+          placeholder="/Impact/Field Day"
+        />
+      </label>
+      <p className="muted">
+        Optional. After you create the issue, Import folder pulls photos and videos from this path.
+      </p>
       <SubmitButton pendingLabel="Creating…">Create issue</SubmitButton>
     </form>
   );
