@@ -1,10 +1,12 @@
 import { Notice } from "@/components/admin-shell";
 import { SubmitButton } from "@/components/submit-button";
 import { addStaff, disconnectDropbox, saveProgram, saveViewerPassword } from "@/lib/actions";
+import { requireStaff } from "@/lib/auth";
 import { dropboxAppConfigured } from "@/lib/dropbox-account";
 import { getSettings, listStaff } from "@/lib/data";
-import { headers } from "next/headers";
 import { requestOrigin } from "@/lib/format";
+import { isOwner } from "@/lib/staff-access";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -13,12 +15,14 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<{ error?: string; dropbox?: string }>;
 }) {
-  const [{ error, dropbox }, settings, staff, headerStore] = await Promise.all([
+  const [{ error, dropbox }, settings, staff, headerStore, me] = await Promise.all([
     searchParams,
     getSettings(),
     listStaff(),
     headers(),
+    requireStaff(),
   ]);
+  const owner = isOwner(me.email);
   const origin = requestOrigin(headerStore);
   const redirectUri = `${origin}/api/dropbox/callback`;
 
@@ -106,21 +110,25 @@ export default async function SettingsPage({
             </li>
           ))}
         </ul>
-        <form className="stack" action={addStaff}>
-          <label className="field">
-            <span>Name</span>
-            <input name="name" />
-          </label>
-          <label className="field">
-            <span>Email</span>
-            <input name="email" type="email" />
-          </label>
-          <label className="field">
-            <span>Password</span>
-            <input name="password" type="password" />
-          </label>
-          <SubmitButton pendingLabel="Adding…">Add staff</SubmitButton>
-        </form>
+        {owner ? (
+          <form className="stack" action={addStaff}>
+            <label className="field">
+              <span>Name</span>
+              <input name="name" />
+            </label>
+            <label className="field">
+              <span>Email</span>
+              <input name="email" type="email" />
+            </label>
+            <label className="field">
+              <span>Password</span>
+              <input name="password" type="password" />
+            </label>
+            <SubmitButton pendingLabel="Adding…">Add staff</SubmitButton>
+          </form>
+        ) : (
+          <p className="muted">Only the owner can add a staff account.</p>
+        )}
       </section>
     </>
   );

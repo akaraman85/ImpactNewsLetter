@@ -20,6 +20,7 @@ import {
   verifyPassword,
 } from "./secrets";
 import { assets, issues, programSettings, shareLinks, staffUsers } from "./schema";
+import { isOwner, setupCodeMatches, staffSignupOpen } from "./staff-access";
 
 function text(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -34,6 +35,10 @@ export async function setupStaff(formData: FormData) {
   const name = text(formData, "name");
   const email = text(formData, "email").toLowerCase();
   const password = text(formData, "password");
+  const code = text(formData, "code");
+  if (!staffSignupOpen() || !isOwner(email) || !setupCodeMatches(code)) {
+    bounce("/admin/setup", "Staff signup is closed.");
+  }
   if (name.length < 2) bounce("/admin/setup", "Add your name.");
   if (!email.includes("@") || email.length > 200) bounce("/admin/setup", "Use a real email address.");
   if (password.length < 10) bounce("/admin/setup", "Use a password of at least 10 characters.");
@@ -74,7 +79,8 @@ export async function logout() {
 }
 
 export async function addStaff(formData: FormData) {
-  await requireStaff();
+  const staff = await requireStaff();
+  if (!isOwner(staff.email)) bounce("/admin/settings", "Only the owner can add a staff account.");
   const name = text(formData, "name");
   const email = text(formData, "email").toLowerCase();
   const password = text(formData, "password");
