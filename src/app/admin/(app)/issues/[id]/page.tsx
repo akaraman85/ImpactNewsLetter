@@ -87,9 +87,12 @@ export default async function IssuePage({
           <input
             name="dropboxFolderPath"
             defaultValue={issue.dropboxFolderPath}
-            placeholder="/Impact/Field Day"
+            placeholder="/Impact/Field Day or a shared folder link"
           />
         </label>
+        <p className="muted">
+          A shared folder link that anyone can open can be imported without connecting Dropbox.
+        </p>
         <div className="row">
           <SubmitButton>Save details</SubmitButton>
           <button className="btn secondary" formAction={writeDraft} type="submit">
@@ -104,8 +107,8 @@ export default async function IssuePage({
       <section className="panel stack">
         <h2>Photos and videos</h2>
         <p className="muted">
-          Imported files stay in Dropbox. The letter only stores a reference, and the parent page
-          asks Dropbox for a short-lived link when someone opens it.
+          Imported files stay in Dropbox. The letter only stores a reference and loads each file
+          from Dropbox when someone opens it.
         </p>
         <form className="row" action={addMediaLink}>
           <input type="hidden" name="id" value={issue.id} />
