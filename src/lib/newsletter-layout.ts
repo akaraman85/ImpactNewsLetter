@@ -3,7 +3,7 @@ export type StoryLayout = "card" | "feature";
 export function storyIsWide(input: { id: string; imageCount: number; videoCount: number }) {
   if (input.id === "more-from-the-day") return true;
   if (input.videoCount >= 2) return true;
-  return input.imageCount + input.videoCount >= 5;
+  return input.imageCount >= 3;
 }
 
 // Pair short stories side by side. A leftover short story spans the row

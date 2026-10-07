@@ -73,20 +73,19 @@ function Story({
   index,
   span,
   shape,
-  flip,
 }: {
   section: NewsletterSection;
   assets: ViewAsset[];
   index: number;
   span: "card" | "feature";
   shape: "text" | "album" | "split" | "stack";
-  flip: boolean;
 }) {
   const body = paragraphs(section.body);
+  const clips =
+    assets.length > 0 && assets.every((asset) => asset.kind === "video");
+  const className = `letter-story tone-${index % 3} ${span} shape-${shape}${clips ? " clips" : ""}`;
   return (
-    <section
-      className={`letter-story tone-${index % 3} ${span} shape-${shape}${shape === "split" && flip ? " flip" : ""}`}
-    >
+    <section className={className}>
       <div className="story-heading">
         <span className="story-index" aria-hidden="true">
           {String(index + 1).padStart(2, "0")}
@@ -138,8 +137,6 @@ export function NewsletterView({
       }),
     ),
   );
-  let splitCount = 0;
-
   return (
     <div className="letter-page">
       <article className="newsletter">
@@ -167,7 +164,6 @@ export function NewsletterView({
           {stories.map(({ section, shots }, index) => {
             const layout = layouts[index] ?? "card";
             const shape = storyShape(layout, shots, paragraphs(section.body).length > 0);
-            const flip = shape === "split" ? splitCount++ % 2 === 1 : false;
             return (
               <Story
                 key={section.id}
@@ -176,7 +172,6 @@ export function NewsletterView({
                 index={index}
                 span={layout}
                 shape={shape}
-                flip={flip}
               />
             );
           })}

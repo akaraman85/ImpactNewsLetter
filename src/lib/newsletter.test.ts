@@ -82,8 +82,8 @@ test("short stories sit in pairs and a leftover spans the row", () => {
 });
 
 test("photo dumps and video groups take the full width", () => {
-  assert.equal(storyIsWide({ id: "section-1", imageCount: 4, videoCount: 0 }), false);
-  assert.equal(storyIsWide({ id: "section-1", imageCount: 5, videoCount: 0 }), true);
+  assert.equal(storyIsWide({ id: "section-1", imageCount: 2, videoCount: 0 }), false);
+  assert.equal(storyIsWide({ id: "section-1", imageCount: 3, videoCount: 0 }), true);
   assert.equal(storyIsWide({ id: "section-1", imageCount: 0, videoCount: 2 }), true);
   assert.equal(storyIsWide({ id: "more-from-the-day", imageCount: 1, videoCount: 0 }), true);
 });
