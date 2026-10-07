@@ -9,6 +9,7 @@ import {
   mediaKind,
 } from "./dropbox.ts";
 import { requestOrigin } from "./format.ts";
+import { planStoryLayouts, storyIsWide } from "./newsletter-layout.ts";
 
 test("parseContent keeps known sections and ignores junk", () => {
   const content = parseContent(
@@ -76,6 +77,21 @@ test("local staff links stay on http and deployed links stay on https", () => {
     ),
     "https://impact-newsletter.vercel.app",
   );
+});
+
+test("short stories sit in pairs and a leftover spans the row", () => {
+  assert.deepEqual(planStoryLayouts([false, false, false]), ["card", "card", "feature"]);
+  assert.deepEqual(planStoryLayouts([false, false, false, false]), ["card", "card", "card", "card"]);
+  assert.deepEqual(planStoryLayouts([true, false, false]), ["feature", "card", "card"]);
+  assert.deepEqual(planStoryLayouts([false, true, false]), ["feature", "feature", "feature"]);
+  assert.deepEqual(planStoryLayouts([false]), ["feature"]);
+});
+
+test("photo dumps and video groups take the full width", () => {
+  assert.equal(storyIsWide({ id: "section-1", imageCount: 2, videoCount: 0 }), false);
+  assert.equal(storyIsWide({ id: "section-1", imageCount: 3, videoCount: 0 }), true);
+  assert.equal(storyIsWide({ id: "section-1", imageCount: 0, videoCount: 2 }), true);
+  assert.equal(storyIsWide({ id: "more-from-the-day", imageCount: 1, videoCount: 0 }), true);
 });
 
 test("folder links and file kinds are recognized", () => {
