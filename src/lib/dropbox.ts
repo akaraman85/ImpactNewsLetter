@@ -1,5 +1,14 @@
+import type { PreviewSize } from "./media-picker";
+
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp", "heic", "avif"]);
 const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "webm", "m4v"]);
+
+// Dropbox's thumbnail API does not accept a video. The shared-link page does
+// publish a still, and this is the address that page requests for it.
+const POSTER_QUERY: Record<PreviewSize, { size: string; mode: string }> = {
+  thumb: { size: "640x480", mode: "2" },
+  display: { size: "1280x960", mode: "2" },
+};
 
 export type MediaKind = "image" | "video";
 
@@ -42,6 +51,54 @@ export function dropboxRawUrl(value: string) {
   } catch {
     return null;
   }
+}
+
+export function dropboxPosterUrl(value: string, size: PreviewSize) {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  if (url.hostname.replace(/^www\./, "") !== "dropbox.com") return null;
+  const parts = url.pathname.split("/").filter(Boolean).map(decodeName);
+  let linkType: "c" | "s" | null = null;
+  let linkKey = "";
+  let secureHash: string | null = null;
+  let path: string[] = [];
+  if (parts[0] === "scl" && parts[1] === "fo") {
+    linkType = "c";
+    linkKey = parts[2] ?? "";
+    secureHash = parts[3] ?? "";
+    path = parts.slice(4);
+  } else if (parts[0] === "scl" && parts[1] === "fi") {
+    linkType = "c";
+    linkKey = parts[2] ?? "";
+    path = parts.slice(3);
+  } else if (parts[0] === "sh") {
+    linkType = "s";
+    linkKey = parts[1] ?? "";
+    secureHash = parts[2] ?? "";
+    path = parts.slice(3);
+  } else if (parts[0] === "s") {
+    linkType = "s";
+    linkKey = parts[1] ?? "";
+    path = parts.slice(2);
+  }
+  if (!linkType || !linkKey || path.length === 0 || path.some((part) => !part)) return null;
+  if ((parts[0] === "sh" || parts[1] === "fo") && !secureHash) return null;
+  const poster = new URL(
+    `https://www.dropbox.com/temp_thumb_from_token/${linkType}/${[linkKey, ...path]
+      .map((part) => encodeURIComponent(part))
+      .join("/")}`,
+  );
+  const rlkey = url.searchParams.get("rlkey");
+  if (rlkey) poster.searchParams.set("rlkey", rlkey);
+  if (secureHash) poster.searchParams.set("secure_hash", secureHash);
+  const query = POSTER_QUERY[size];
+  poster.searchParams.set("size", query.size);
+  poster.searchParams.set("size_mode", query.mode);
+  return poster.toString();
 }
 
 export function isFolderLink(value: string) {
@@ -313,6 +370,32 @@ async function postSharedFolderPage(
     return { entries: [], has_more_entries: false };
   }
   throw new Error("Dropbox could not list the rest of that folder. Try Import folder again.");
+}
+
+const sharedFileLists = new Map<string, Promise<DropboxFile[]>>();
+
+function sharedFileList(folderUrl: string) {
+  const key = canonicalSharedLink(folderUrl);
+  const existing = sharedFileLists.get(key);
+  if (existing) return existing;
+  const pending = listPublicDropboxMedia(key).catch((error: unknown) => {
+    sharedFileLists.delete(key);
+    throw error;
+  });
+  sharedFileLists.set(key, pending);
+  return pending;
+}
+
+// Files imported through the Dropbox API keep a path, not the shared file link
+// the folder page uses for its still. Match the video by name in that folder.
+export async function sharedVideoUrl(folderUrl: string, name: string) {
+  if (!name.trim() || !isFolderLink(folderUrl)) return null;
+  try {
+    const files = await sharedFileList(folderUrl);
+    return files.find((file) => file.kind === "video" && file.name === name)?.sourceUrl ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function listPublicDropboxMedia(folderUrl: string): Promise<DropboxFile[]> {

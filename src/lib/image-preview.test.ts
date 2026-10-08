@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import sharp from "sharp";
 import { looksLikeImage, previewSize, resizeToJpeg } from "./image-preview.ts";
-import { mediaPreviewSrc } from "./media-picker.ts";
+import { mediaPreviewSrc, mediaStillSrc } from "./media-picker.ts";
 
 test("grid previews ask for a thumbnail and the letter keeps the display address", () => {
   assert.equal(mediaPreviewSrc("/api/admin/media/abc", "thumb"), "/api/admin/media/abc?size=thumb");
@@ -12,6 +12,8 @@ test("grid previews ask for a thumbnail and the letter keeps the display address
   );
   assert.equal(mediaPreviewSrc("/api/admin/media/abc", "display"), "/api/admin/media/abc");
   assert.equal(mediaPreviewSrc("https://www.dropbox.com/scl/fi/abc/photo.jpg", "thumb"), "https://www.dropbox.com/scl/fi/abc/photo.jpg");
+  assert.equal(mediaStillSrc("/api/admin/media/abc", "display"), "/api/admin/media/abc?size=display");
+  assert.equal(mediaStillSrc("/api/media/token/abc?size=thumb&retry=1", "thumb"), "/api/media/token/abc?size=thumb");
   assert.equal(previewSize("thumb"), "thumb");
   assert.equal(previewSize("full"), "display");
   assert.equal(previewSize(null), "display");

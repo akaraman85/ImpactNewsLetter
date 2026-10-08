@@ -26,7 +26,9 @@ export async function GET(
     return new NextResponse("Not found", { status: 404 });
   }
   try {
-    return await assetMediaResponse(request, asset, await assetReadUrl(asset));
+    const folderUrl =
+      asset.kind === "video" && !asset.sourceUrl ? found.issue.dropboxFolderPath : null;
+    return await assetMediaResponse(request, { ...asset, folderUrl }, await assetReadUrl(asset));
   } catch (error) {
     return unavailable(error);
   }

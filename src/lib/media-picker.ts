@@ -72,10 +72,18 @@ export type PreviewSize = "thumb" | "display";
 // display size, which is the route's default, so those addresses stay stable.
 export function mediaPreviewSrc(src: string, size: PreviewSize) {
   if (size === "display" || !src.startsWith("/api/")) return src;
+  return mediaStillSrc(src, "thumb");
+}
+
+// A video still has to name its size. The display address stays bare so photo
+// requests keep the route's default.
+export function mediaStillSrc(src: string, size: PreviewSize) {
+  if (!src.startsWith("/api/")) return src;
   const split = src.indexOf("?");
   const path = split === -1 ? src : src.slice(0, split);
   const params = new URLSearchParams(split === -1 ? "" : src.slice(split + 1));
-  params.set("size", "thumb");
+  params.delete("retry");
+  params.set("size", size);
   return `${path}?${params.toString()}`;
 }
 

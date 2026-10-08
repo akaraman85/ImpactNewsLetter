@@ -1,8 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { mediaPreviewSrc } from "@/lib/media-picker";
+import { mediaPreviewSrc, mediaStillSrc } from "@/lib/media-picker";
 import { QueuedPreview } from "./queued-preview";
+
+function PlayMark() {
+  return (
+    <svg className="play-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M10 8.2v7.6l6.2-3.8L10 8.2Z" fill="currentColor" />
+    </svg>
+  );
+}
 
 export function MediaThumb({
   src,
@@ -15,12 +24,22 @@ export function MediaThumb({
 }) {
   if (kind === "video") {
     return (
-      <div className="thumb-fallback is-video" aria-hidden="true">
-        <svg className="play-mark" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.6" />
-          <path d="M10 8.2v7.6l6.2-3.8L10 8.2Z" fill="currentColor" />
-        </svg>
-      </div>
+      <span className="thumb-frame">
+        <QueuedPreview
+          key={src}
+          className="thumb"
+          src={mediaPreviewSrc(src, "thumb")}
+          alt=""
+          fallback={
+            <div className="thumb-fallback is-video" aria-hidden="true">
+              <PlayMark />
+            </div>
+          }
+        />
+        <span className="thumb-play" aria-hidden="true">
+          <PlayMark />
+        </span>
+      </span>
     );
   }
   return (
@@ -81,6 +100,7 @@ function VideoPlayer({
     <video
       className={className}
       src={src}
+      poster={mediaStillSrc(src, "display")}
       controls
       playsInline
       preload="metadata"

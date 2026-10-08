@@ -1,4 +1,5 @@
 import { paragraphs, type NewsletterContent, type NewsletterSection } from "@/lib/content";
+import { mediaStillSrc } from "@/lib/media-picker";
 import { planStoryLayouts, storyIsWide } from "@/lib/newsletter-layout";
 
 export type ViewAsset = {
@@ -29,7 +30,14 @@ function MediaFrame({ asset }: { asset: ViewAsset }) {
     <figure className={asset.kind === "video" ? "frame is-video" : "frame"}>
       <div className="frame-media">
         {asset.kind === "video" ? (
-          <video controls playsInline preload="metadata" src={asset.src} aria-label={label} />
+          <video
+            controls
+            playsInline
+            preload="metadata"
+            poster={mediaStillSrc(asset.src, "display")}
+            src={asset.src}
+            aria-label={label}
+          />
         ) : (
           // Dropbox links expire and are not served through the image optimizer.
           // eslint-disable-next-line @next/next/no-img-element
