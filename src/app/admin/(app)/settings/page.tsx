@@ -1,6 +1,12 @@
 import { Notice } from "@/components/admin-shell";
 import { SubmitButton } from "@/components/submit-button";
-import { addStaff, disconnectDropbox, saveProgram, saveViewerPassword } from "@/lib/actions";
+import {
+  addStaff,
+  changePassword,
+  disconnectDropbox,
+  saveProgram,
+  saveViewerPassword,
+} from "@/lib/actions";
 import { requireStaff } from "@/lib/auth";
 import { dropboxAppConfigured } from "@/lib/dropbox-account";
 import { getSettings, listStaff } from "@/lib/data";
@@ -102,6 +108,26 @@ export default async function SettingsPage({
             Remove passphrase
           </button>
         </div>
+      </form>
+
+      <form className="panel stack" action={changePassword}>
+        <h2>Your password</h2>
+        <p className="muted">Use at least 10 characters. This replaces the password for {me.email}.</p>
+        <label className="field">
+          <span>Current password</span>
+          <input name="currentPassword" type="password" autoComplete="current-password" required />
+        </label>
+        <label className="field">
+          <span>New password</span>
+          <input
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            minLength={10}
+            required
+          />
+        </label>
+        <SubmitButton pendingLabel="Updating…">Update password</SubmitButton>
       </form>
 
       <section className="panel stack">

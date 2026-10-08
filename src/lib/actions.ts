@@ -85,6 +85,24 @@ export async function logout() {
   redirect("/admin/login");
 }
 
+export async function changePassword(formData: FormData) {
+  const staff = await requireStaff();
+  const current = text(formData, "currentPassword");
+  const next = text(formData, "password");
+  if (!verifyPassword(current, staff.passwordHash)) {
+    bounce("/admin/settings", "The current password did not match.");
+  }
+  if (next.length < 10) bounce("/admin/settings", "Use a password of at least 10 characters.");
+  await withDb(async (db) => {
+    await db
+      .update(staffUsers)
+      .set({ passwordHash: hashPassword(next) })
+      .where(eq(staffUsers.id, staff.id));
+  });
+  revalidatePath("/admin/settings");
+  redirect("/admin/settings");
+}
+
 export async function addStaff(formData: FormData) {
   const staff = await requireStaff();
   if (!isOwner(staff.email)) bounce("/admin/settings", "Only the owner can add a staff account.");
