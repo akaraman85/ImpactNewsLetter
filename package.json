@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/lib/newsletter.test.ts src/lib/staff-access.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/newsletter.test.ts src/lib/staff-access.test.ts src/lib/section-placement.test.ts"
   },
   "dependencies": {
     "@vercel/functions": "^3.9.11",
