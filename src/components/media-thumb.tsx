@@ -37,3 +37,50 @@ export function MediaThumb({
     />
   );
 }
+
+export function FullMedia({
+  src,
+  alt,
+  kind = "image",
+  className,
+}: {
+  src: string;
+  alt: string;
+  kind?: "image" | "video";
+  className?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div className={className ? `${className} is-unavailable` : "is-unavailable"}>
+        {kind === "video" ? "Video unavailable" : "Preview unavailable"}
+      </div>
+    );
+  }
+  if (kind === "video") {
+    return (
+      <video
+        className={className}
+        src={src}
+        controls
+        playsInline
+        preload="metadata"
+        aria-label={alt}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  return (
+    // Dropbox links expire and are not served through the image optimizer.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      className={className}
+      src={src}
+      alt={alt}
+      referrerPolicy="no-referrer"
+      decoding="async"
+      draggable={false}
+      onError={() => setFailed(true)}
+    />
+  );
+}

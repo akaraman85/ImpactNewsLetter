@@ -7,6 +7,7 @@ import {
   sectionsForAsset,
   toggleId,
   uniqueKnownIds,
+  viewerNeighbors,
 } from "./media-picker.ts";
 
 const files = [
@@ -60,4 +61,16 @@ test("section labels fall back when a heading is blank", () => {
     sectionsForAsset(sections, "photo").map((section) => section.id),
     ["one", "two"],
   );
+});
+
+test("full-size viewer steps through the pictures that were open", () => {
+  const list = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  const first = viewerNeighbors(list, "a");
+  assert.equal(first.previous, null);
+  assert.equal(first.next?.id, "b");
+  assert.equal(first.label, "1 of 3");
+  assert.equal(viewerNeighbors(list, "b").previous?.id, "a");
+  assert.equal(viewerNeighbors(list, "c").next, null);
+  assert.equal(viewerNeighbors(list, "missing").index, -1);
+  assert.equal(viewerNeighbors([{ id: "only" }], "only").label, undefined);
 });

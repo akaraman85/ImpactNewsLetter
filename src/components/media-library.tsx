@@ -9,7 +9,8 @@ import {
   type LetterSectionRef,
   type LibraryFilter,
 } from "@/lib/media-picker";
-import { MediaThumb } from "./media-thumb";
+import { MediaLightbox, useMediaViewer } from "./media-lightbox";
+import { FullMedia, MediaThumb } from "./media-thumb";
 
 export type EditorMedia = {
   id: string;
@@ -46,6 +47,7 @@ export function MediaLibrary({
   const [captions, setCaptions] = useState<Record<string, string>>(() =>
     Object.fromEntries(assets.map((asset) => [asset.id, asset.caption])),
   );
+  const viewer = useMediaViewer<EditorMedia>();
 
   const visible = useMemo(
     () =>
@@ -172,6 +174,21 @@ export function MediaLibrary({
             </button>
           </div>
           <p className="muted">{open.kind === "video" ? "Video" : "Photo"}</p>
+          {open.kind === "image" ? (
+            <button
+              type="button"
+              className="detail-zoom"
+              aria-label={`View ${open.name} full size`}
+              onClick={() => viewer.open(open, visible)}
+            >
+              <FullMedia key={open.id} className="detail-photo" src={open.src} alt="" kind="image" />
+              <span className="detail-zoom-label">Full size</span>
+            </button>
+          ) : (
+            <div className="detail-stage">
+              <FullMedia key={open.id} className="detail-photo" src={open.src} alt={open.name} kind="video" />
+            </div>
+          )}
           <PlacementLine assetId={open.id} sections={sections} />
           <label className="field">
             <span>Caption</span>
@@ -215,11 +232,26 @@ export function MediaLibrary({
                 Remove
               </button>
             </form>
+            <button type="button" className="btn secondary" onClick={() => viewer.open(open, visible)}>
+              Full size
+            </button>
           </div>
         </div>
       ) : (
-        <p className="muted">Select a file to edit the caption, move it, or remove it.</p>
+        <p className="muted">Select a file to see the whole picture, edit the caption, move it, or remove it.</p>
       )}
+      {viewer.current ? (
+        <MediaLightbox
+          src={viewer.current.src}
+          name={viewer.current.name}
+          kind={viewer.current.kind}
+          caption={captions[viewer.current.id] ?? ""}
+          position={viewer.position}
+          onClose={viewer.close}
+          onPrevious={viewer.onPrevious}
+          onNext={viewer.onNext}
+        />
+      ) : null}
     </div>
   );
 }

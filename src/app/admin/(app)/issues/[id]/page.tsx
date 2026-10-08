@@ -121,7 +121,8 @@ export default async function IssuePage({
         <p className="muted">
           Imported files stay in Dropbox. The letter only stores a reference and loads each file
           from Dropbox when someone opens it. Include a file to show it to families, then place it
-          from the tray in the letter.
+          from the tray in the letter. Select a photo to see the whole picture, and use Full size
+          when you want it as large as the window.
         </p>
         <form className="row" action={addMediaLink}>
           <input type="hidden" name="id" value={issue.id} />
@@ -177,6 +178,7 @@ export default async function IssuePage({
               name: asset.name,
               kind: asset.kind === "video" ? "video" : "image",
               src: `/api/admin/media/${asset.id}`,
+              caption: asset.caption,
             }))}
         />
         <label className="field">

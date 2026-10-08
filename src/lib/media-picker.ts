@@ -65,3 +65,16 @@ export function moveId(ids: string[], id: string, direction: -1 | 1) {
 export function sectionsForAsset(sections: LetterSectionRef[], assetId: string) {
   return sections.filter((section) => section.assetIds.includes(assetId));
 }
+
+export function viewerNeighbors<T extends { id: string }>(list: readonly T[], id: string) {
+  const index = list.findIndex((item) => item.id === id);
+  if (index < 0) {
+    return { index, previous: null, next: null, label: undefined };
+  }
+  return {
+    index,
+    previous: index > 0 ? list[index - 1] : null,
+    next: index < list.length - 1 ? list[index + 1] : null,
+    label: list.length > 1 ? `${index + 1} of ${list.length}` : undefined,
+  };
+}
