@@ -1,6 +1,11 @@
 import type { PreviewSize } from "./media-picker";
 import sharp from "sharp";
 
+// Several previews can be resized on one server instance. One libvips thread
+// keeps a 24 megapixel phone photo from crowding the others out.
+sharp.concurrency(1);
+sharp.cache(false);
+
 const MAX_EDGE: Record<PreviewSize, number> = {
   thumb: 640,
   display: 1800,

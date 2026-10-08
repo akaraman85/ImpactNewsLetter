@@ -1,7 +1,8 @@
 "use client";
 
-import { mediaPreviewSrc } from "@/lib/media-picker";
 import { useState } from "react";
+import { mediaPreviewSrc } from "@/lib/media-picker";
+import { QueuedPreview } from "./queued-preview";
 
 export function MediaThumb({
   src,
@@ -12,7 +13,6 @@ export function MediaThumb({
   alt: string;
   kind?: "image" | "video";
 }) {
-  const [failed, setFailed] = useState(false);
   if (kind === "video") {
     return (
       <div className="thumb-fallback is-video" aria-hidden="true">
@@ -23,18 +23,13 @@ export function MediaThumb({
       </div>
     );
   }
-  if (failed) return <div className="thumb-fallback">{alt}</div>;
   return (
-    // Dropbox links expire and are not served through the image optimizer.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <QueuedPreview
+      key={src}
       className="thumb"
       src={mediaPreviewSrc(src, "thumb")}
       alt=""
-      referrerPolicy="no-referrer"
-      loading="lazy"
-      decoding="async"
-      onError={() => setFailed(true)}
+      fallback={<div className="thumb-fallback">{alt}</div>}
     />
   );
 }
@@ -50,37 +45,46 @@ export function FullMedia({
   kind?: "image" | "video";
   className?: string;
 }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) {
-    return (
-      <div className={className ? `${className} is-unavailable` : "is-unavailable"}>
-        {kind === "video" ? "Video unavailable" : "Preview unavailable"}
-      </div>
-    );
-  }
   if (kind === "video") {
-    return (
-      <video
-        className={className}
-        src={src}
-        controls
-        playsInline
-        preload="metadata"
-        aria-label={alt}
-        onError={() => setFailed(true)}
-      />
-    );
+    return <VideoPlayer src={src} alt={alt} className={className} />;
   }
+  const unavailableClass = className ? `${className} is-unavailable` : "is-unavailable";
   return (
-    // Dropbox links expire and are not served through the image optimizer.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <QueuedPreview
+      key={src}
+      eager
       className={className}
       src={mediaPreviewSrc(src, "display")}
       alt={alt}
-      referrerPolicy="no-referrer"
-      decoding="async"
       draggable={false}
+      fallback={<div className={unavailableClass}>Preview unavailable</div>}
+    />
+  );
+}
+
+function VideoPlayer({
+  src,
+  alt,
+  className,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div className={className ? `${className} is-unavailable` : "is-unavailable"}>Video unavailable</div>
+    );
+  }
+  return (
+    <video
+      className={className}
+      src={src}
+      controls
+      playsInline
+      preload="metadata"
+      aria-label={alt}
       onError={() => setFailed(true)}
     />
   );
