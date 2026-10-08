@@ -1,16 +1,14 @@
 import { Notice } from "@/components/admin-shell";
 import { CopyLink } from "@/components/copy-link";
 import { LetterSections } from "@/components/letter-sections";
-import { MediaThumb } from "@/components/media-thumb";
+import { MediaLibrary, type EditorMedia } from "@/components/media-library";
 import { SubmitButton } from "@/components/submit-button";
 import {
   addMediaLink,
   archiveIssue,
   createLink,
   importDropboxFolder,
-  moveAsset,
   publishIssue,
-  removeAsset,
   revokeLink,
   saveAssets,
   saveIssueDetails,
@@ -19,8 +17,8 @@ import {
   writeDraft,
   addSection,
 } from "@/lib/actions";
-import { issueContent, listAssets, listShareLinks } from "@/lib/data";
-import { getIssue } from "@/lib/data";
+import { getIssue, issueContent, listAssets, listShareLinks } from "@/lib/data";
+import type { LetterSectionRef } from "@/lib/media-picker";
 import { decryptSecret } from "@/lib/secrets";
 import { formatEventDate, requestOrigin } from "@/lib/format";
 import { headers } from "next/headers";
@@ -46,6 +44,19 @@ export default async function IssuePage({
     headers(),
   ]);
   const content = issueContent(issue);
+  const library: EditorMedia[] = media.map((asset) => ({
+    id: asset.id,
+    name: asset.name,
+    kind: asset.kind === "video" ? "video" : "image",
+    included: asset.included,
+    caption: asset.caption,
+    src: `/api/admin/media/${asset.id}`,
+  }));
+  const letterSections: LetterSectionRef[] = content.sections.map((section) => ({
+    id: section.id,
+    heading: section.heading,
+    assetIds: section.assetIds,
+  }));
   const origin = requestOrigin(headerStore);
   const activeLinks = links.filter((link) => !link.revokedAt);
 
@@ -109,7 +120,8 @@ export default async function IssuePage({
         <h2>Photos and videos</h2>
         <p className="muted">
           Imported files stay in Dropbox. The letter only stores a reference and loads each file
-          from Dropbox when someone opens it.
+          from Dropbox when someone opens it. Include a file to show it to families, then place it
+          from the tray in the letter.
         </p>
         <form className="row" action={addMediaLink}>
           <input type="hidden" name="id" value={issue.id} />
@@ -130,57 +142,7 @@ export default async function IssuePage({
             <form id="photos" action={saveAssets}>
               <input type="hidden" name="id" value={issue.id} />
             </form>
-            <div className="filmstrip">
-              {media.map((asset, index) => (
-                <div className="shot" key={asset.id}>
-                  <MediaThumb alt={asset.name} src={`/api/admin/media/${asset.id}`} />
-                  <div className="stack">
-                    <strong>{asset.name}</strong>
-                    <span className="muted">{asset.kind}</span>
-                    <label className="checks">
-                      <input
-                        form="photos"
-                        type="checkbox"
-                        name="included"
-                        value={asset.id}
-                        defaultChecked={asset.included}
-                      />
-                      Include
-                    </label>
-                    <label className="field">
-                      <span>Caption</span>
-                      <input form="photos" name={`caption-${asset.id}`} defaultValue={asset.caption} />
-                    </label>
-                  </div>
-                  <div className="row">
-                    <form action={moveAsset}>
-                      <input type="hidden" name="id" value={issue.id} />
-                      <button className="btn secondary" name="move" value={`${asset.id}:up`} type="submit" disabled={index === 0}>
-                        Up
-                      </button>
-                    </form>
-                    <form action={moveAsset}>
-                      <input type="hidden" name="id" value={issue.id} />
-                      <button
-                        className="btn secondary"
-                        name="move"
-                        value={`${asset.id}:down`}
-                        type="submit"
-                        disabled={index === media.length - 1}
-                      >
-                        Down
-                      </button>
-                    </form>
-                    <form action={removeAsset}>
-                      <input type="hidden" name="id" value={issue.id} />
-                      <button className="btn danger" name="assetId" value={asset.id} type="submit">
-                        Remove
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <MediaLibrary issueId={issue.id} assets={library} sections={letterSections} />
             <div className="row">
               <button className="btn" form="photos" type="submit">
                 Save photo choices
