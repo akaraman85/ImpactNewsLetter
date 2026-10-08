@@ -589,6 +589,34 @@ textarea {
   border-radius: 0.65rem;
 }
 
+.thumb-frame {
+  position: relative;
+  display: block;
+}
+
+.thumb-play {
+  position: absolute;
+  left: 0.4rem;
+  bottom: 0.4rem;
+  display: none;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 999px;
+  background: rgba(28, 25, 21, 0.72);
+  color: #fffdf8;
+  pointer-events: none;
+}
+
+.thumb-frame:has(img) .thumb-play {
+  display: grid;
+}
+
+.thumb-play .play-mark {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
 .thumb-fallback.is-video {
   background: #2c2824;
   color: #f6f1e8;

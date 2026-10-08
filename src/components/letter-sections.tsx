@@ -82,27 +82,13 @@ function toggleSelected(current: Set<string>, list: string[], anchorId: string |
 }
 
 function PickerPreview({ src, kind }: { src: string; kind: "image" | "video" }) {
-  const [failed, setFailed] = useState(false);
-  if (kind === "video") {
-    if (failed) return <span className="picker-fallback">Video</span>;
-    return (
-      <video
-        className="picker-preview"
-        src={src}
-        muted
-        playsInline
-        preload="metadata"
-        onError={() => setFailed(true)}
-      />
-    );
-  }
   return (
     <QueuedPreview
       key={src}
       className="picker-preview"
       src={mediaPreviewSrc(src, "thumb")}
       alt=""
-      fallback={<span className="picker-fallback">Preview unavailable</span>}
+      fallback={<span className="picker-fallback">{kind === "video" ? "Video" : "Preview unavailable"}</span>}
     />
   );
 }

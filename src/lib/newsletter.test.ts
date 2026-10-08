@@ -3,6 +3,7 @@ import test from "node:test";
 import { emptyContent, parseContent, placeUnusedAssets } from "./content.ts";
 import {
   canonicalSharedLink,
+  dropboxPosterUrl,
   dropboxRawUrl,
   isFolderLink,
   listAllSharedEntries,
@@ -102,6 +103,29 @@ test("folder links and file kinds are recognized", () => {
   assert.equal(mediaKind("relay.JPG"), "image");
   assert.equal(mediaKind("game.mp4"), "video");
   assert.equal(mediaKind("notes.pdf"), null);
+});
+
+test("a shared video link points at the still from the folder page", () => {
+  assert.equal(
+    dropboxPosterUrl(
+      "https://www.dropbox.com/scl/fo/7xnacpd76qmpw8qkozo2v/AAMd0m3E0eg_Ya77lHZdwEk/IMG_1802.mov?rlkey=stem&dl=0&st=knarchgi",
+      "thumb",
+    ),
+    "https://www.dropbox.com/temp_thumb_from_token/c/7xnacpd76qmpw8qkozo2v/IMG_1802.mov?rlkey=stem&secure_hash=AAMd0m3E0eg_Ya77lHZdwEk&size=640x480&size_mode=2",
+  );
+  assert.equal(
+    dropboxPosterUrl("https://www.dropbox.com/scl/fi/abc/clip.mp4?rlkey=key&dl=0", "display"),
+    "https://www.dropbox.com/temp_thumb_from_token/c/abc/clip.mp4?rlkey=key&size=1280x960&size_mode=2",
+  );
+  assert.equal(
+    dropboxPosterUrl(
+      "https://www.dropbox.com/scl/fo/abc/hash/Day/Photo%20Oct%2004.jpg?rlkey=stem",
+      "thumb",
+    ),
+    "https://www.dropbox.com/temp_thumb_from_token/c/abc/Day/Photo%20Oct%2004.jpg?rlkey=stem&secure_hash=hash&size=640x480&size_mode=2",
+  );
+  assert.equal(dropboxPosterUrl("https://www.dropbox.com/scl/fo/abc/hash?rlkey=stem", "thumb"), null);
+  assert.equal(dropboxPosterUrl("https://example.com/clip.mov", "thumb"), null);
 });
 
 test("shared links keep rlkey and drop the website tracking parameters", () => {
