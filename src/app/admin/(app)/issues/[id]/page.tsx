@@ -1,5 +1,6 @@
 import { Notice } from "@/components/admin-shell";
 import { CopyLink } from "@/components/copy-link";
+import { LetterSections } from "@/components/letter-sections";
 import { MediaThumb } from "@/components/media-thumb";
 import { SubmitButton } from "@/components/submit-button";
 import {
@@ -205,32 +206,17 @@ export default async function IssuePage({
           <span>Opening</span>
           <textarea name="intro" defaultValue={content.intro} />
         </label>
-        {content.sections.map((section, index) => (
-          <fieldset className="section-card" key={section.id}>
-            <input type="hidden" name={`section-id-${index}`} value={section.id} />
-            <label className="field">
-              <span>Section heading</span>
-              <input name={`section-heading-${index}`} defaultValue={section.heading} />
-            </label>
-            <label className="field">
-              <span>Section text</span>
-              <textarea name={`section-body-${index}`} defaultValue={section.body} />
-            </label>
-            <div className="checks">
-              {media.filter((asset) => asset.included).map((asset) => (
-                <label key={asset.id}>
-                  <input
-                    type="checkbox"
-                    name={`section-assets-${index}`}
-                    value={asset.id}
-                    defaultChecked={section.assetIds.includes(asset.id)}
-                  />
-                  {asset.name}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        ))}
+        <LetterSections
+          sections={content.sections}
+          assets={media
+            .filter((asset) => asset.included)
+            .map((asset) => ({
+              id: asset.id,
+              name: asset.name,
+              kind: asset.kind === "video" ? "video" : "image",
+              src: `/api/admin/media/${asset.id}`,
+            }))}
+        />
         <label className="field">
           <span>Closing</span>
           <textarea name="closing" defaultValue={content.closing} />
