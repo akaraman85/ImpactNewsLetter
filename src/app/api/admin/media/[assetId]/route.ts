@@ -1,12 +1,14 @@
 import { readStaffSession } from "@/lib/auth";
 import { getAsset } from "@/lib/data";
+import { assetMediaResponse } from "@/lib/media-response";
 import { assetReadUrl } from "@/lib/media-url";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ assetId: string }> },
 ) {
   const session = await readStaffSession();
@@ -15,14 +17,7 @@ export async function GET(
   const asset = await getAsset(assetId);
   if (!asset) return new NextResponse("Not found", { status: 404 });
   try {
-    const url = await assetReadUrl(asset);
-    if (!url) return new NextResponse("Photo unavailable", { status: 404 });
-    return NextResponse.redirect(url, {
-      headers: {
-        "Cache-Control": "private, no-store",
-        "Referrer-Policy": "no-referrer",
-      },
-    });
+    return await assetMediaResponse(request, asset, await assetReadUrl(asset));
   } catch {
     return new NextResponse("Photo unavailable", { status: 404 });
   }

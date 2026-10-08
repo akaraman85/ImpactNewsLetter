@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/lib/newsletter.test.ts src/lib/staff-access.test.ts src/lib/section-placement.test.ts src/lib/media-picker.test.ts src/lib/secrets.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/newsletter.test.ts src/lib/staff-access.test.ts src/lib/section-placement.test.ts src/lib/media-picker.test.ts src/lib/secrets.test.ts src/lib/image-preview.test.ts"
   },
   "dependencies": {
     "@vercel/functions": "^3.9.11",
@@ -17,6 +17,7 @@
     "pg": "^8.23.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "sharp": "^0.35.5",
     "zod": "^4.6.5"
   },
   "devDependencies": {

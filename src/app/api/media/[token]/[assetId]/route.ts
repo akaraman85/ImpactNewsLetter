@@ -1,13 +1,15 @@
 import { viewerGranted } from "@/lib/auth";
 import { findActiveShare, getAsset, getSettings } from "@/lib/data";
+import { assetMediaResponse } from "@/lib/media-response";
 import { assetReadUrl } from "@/lib/media-url";
 import { hashToken, isShareToken } from "@/lib/secrets";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ token: string; assetId: string }> },
 ) {
   const { token, assetId } = await params;
@@ -24,14 +26,7 @@ export async function GET(
     return new NextResponse("Not found", { status: 404 });
   }
   try {
-    const url = await assetReadUrl(asset);
-    if (!url) return new NextResponse("Photo unavailable", { status: 404 });
-    return NextResponse.redirect(url, {
-      headers: {
-        "Cache-Control": "private, no-store",
-        "Referrer-Policy": "no-referrer",
-      },
-    });
+    return await assetMediaResponse(request, asset, await assetReadUrl(asset));
   } catch {
     return new NextResponse("Photo unavailable", { status: 404 });
   }

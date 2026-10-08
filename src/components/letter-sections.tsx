@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { mediaPreviewSrc } from "@/lib/media-picker";
 import { moveToSection, placementFromSections, removeFromSection } from "@/lib/section-placement";
 import { MediaLightbox, useMediaViewer } from "./media-lightbox";
 
@@ -101,7 +102,7 @@ function PickerPreview({ src, kind }: { src: string; kind: "image" | "video" }) 
     // eslint-disable-next-line @next/next/no-img-element
     <img
       className="picker-preview"
-      src={src}
+      src={mediaPreviewSrc(src, "thumb")}
       alt=""
       loading="lazy"
       decoding="async"
