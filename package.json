@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/lib/newsletter.test.ts src/lib/staff-access.test.ts src/lib/section-placement.test.ts src/lib/media-picker.test.ts src/lib/secrets.test.ts src/lib/image-preview.test.ts"
+    "test": "node --experimental-strip-types --import ./src/lib/register-ts-hook.mjs --test src/lib/newsletter.test.ts src/lib/staff-access.test.ts src/lib/section-placement.test.ts src/lib/media-picker.test.ts src/lib/secrets.test.ts src/lib/image-preview.test.ts src/lib/preview-queue.test.ts src/lib/media-response.test.ts"
   },
   "dependencies": {
     "@vercel/functions": "^3.9.11",

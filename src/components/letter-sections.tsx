@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { mediaPreviewSrc } from "@/lib/media-picker";
 import { moveToSection, placementFromSections, removeFromSection } from "@/lib/section-placement";
 import { MediaLightbox, useMediaViewer } from "./media-lightbox";
+import { QueuedPreview } from "./queued-preview";
 
 type PickerAsset = {
   id: string;
@@ -82,10 +83,8 @@ function toggleSelected(current: Set<string>, list: string[], anchorId: string |
 
 function PickerPreview({ src, kind }: { src: string; kind: "image" | "video" }) {
   const [failed, setFailed] = useState(false);
-  if (failed) {
-    return <span className="picker-fallback">{kind === "video" ? "Video" : "Preview unavailable"}</span>;
-  }
   if (kind === "video") {
+    if (failed) return <span className="picker-fallback">Video</span>;
     return (
       <video
         className="picker-preview"
@@ -98,16 +97,12 @@ function PickerPreview({ src, kind }: { src: string; kind: "image" | "video" }) 
     );
   }
   return (
-    // Dropbox links expire and are not served through the image optimizer.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <QueuedPreview
+      key={src}
       className="picker-preview"
       src={mediaPreviewSrc(src, "thumb")}
       alt=""
-      loading="lazy"
-      decoding="async"
-      referrerPolicy="no-referrer"
-      onError={() => setFailed(true)}
+      fallback={<span className="picker-fallback">Preview unavailable</span>}
     />
   );
 }

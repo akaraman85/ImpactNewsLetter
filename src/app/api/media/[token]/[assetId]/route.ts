@@ -1,6 +1,6 @@
 import { viewerGranted } from "@/lib/auth";
 import { findActiveShare, getAsset, getSettings } from "@/lib/data";
-import { assetMediaResponse } from "@/lib/media-response";
+import { assetMediaResponse, unavailable } from "@/lib/media-response";
 import { assetReadUrl } from "@/lib/media-url";
 import { hashToken, isShareToken } from "@/lib/secrets";
 import { NextResponse } from "next/server";
@@ -27,7 +27,7 @@ export async function GET(
   }
   try {
     return await assetMediaResponse(request, asset, await assetReadUrl(asset));
-  } catch {
-    return new NextResponse("Photo unavailable", { status: 404 });
+  } catch (error) {
+    return unavailable(error);
   }
 }

@@ -1,6 +1,6 @@
 import { readStaffSession } from "@/lib/auth";
 import { getAsset } from "@/lib/data";
-import { assetMediaResponse } from "@/lib/media-response";
+import { assetMediaResponse, unavailable } from "@/lib/media-response";
 import { assetReadUrl } from "@/lib/media-url";
 import { NextResponse } from "next/server";
 
@@ -18,7 +18,7 @@ export async function GET(
   if (!asset) return new NextResponse("Not found", { status: 404 });
   try {
     return await assetMediaResponse(request, asset, await assetReadUrl(asset));
-  } catch {
-    return new NextResponse("Photo unavailable", { status: 404 });
+  } catch (error) {
+    return unavailable(error);
   }
 }
