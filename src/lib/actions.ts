@@ -293,6 +293,12 @@ export async function addMediaLink(formData: FormData) {
   if (!isDropboxUrl(url)) {
     bounce(`/admin/issues/${id}`, "Paste a Dropbox file link.");
   }
+  if (isFolderLink(url)) {
+    bounce(
+      `/admin/issues/${id}`,
+      "That is a folder link. Use Import folder to pull in its photos and videos.",
+    );
+  }
   const kind = mediaKind(name) ?? mediaKind(url) ?? "image";
   const existing = await listAssets(id);
   const order = existing.reduce((max, asset) => Math.max(max, asset.sortOrder), 0) + 1;
