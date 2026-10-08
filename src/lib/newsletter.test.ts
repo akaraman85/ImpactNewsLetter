@@ -5,8 +5,10 @@ import {
   canonicalSharedLink,
   dropboxRawUrl,
   isFolderLink,
+  listAllSharedEntries,
   mediaFromSharedFolderHtml,
   mediaKind,
+  sharedFolderRequest,
 } from "./dropbox.ts";
 import { requestOrigin } from "./format.ts";
 import { planStoryLayouts, storyIsWide } from "./newsletter-layout.ts";
@@ -124,6 +126,89 @@ test("a public folder page lists its photos and videos", () => {
   assert.equal(listed.files[0]?.name, "IMG_1802.mov");
   assert.equal(listed.files[0]?.kind, "video");
   assert.equal(listed.files[0]?.sourceUrl, "https://www.dropbox.com/scl/fo/abc/AAMd0m3E0eg_Ya77lHZdwEk/IMG_1802.mov?rlkey=stem");
+});
+
+test("a public page with a continuation voucher still has more files", () => {
+  const fileUrl = "https://www.dropbox.com/scl/fo/abc/token/photo.jpg?rlkey=stem&dl=0";
+  const voucher = JSON.stringify({
+    prog: JSON.stringify({ ctx: { page_size: 75, page_offset: 16 } }),
+    sig: "abc",
+  });
+  const html = `<script>registerStreamedPrefetch("abc", "${Buffer.from(
+    `${fileUrl} ${voucher}`,
+  ).toString("base64")}")</script>`;
+  const listed = mediaFromSharedFolderHtml(html);
+  assert.equal(listed.truncated, true);
+  assert.equal(listed.files[0]?.name, "photo.jpg");
+});
+
+test("shared folder links keep the listing key", () => {
+  const request = sharedFolderRequest(
+    "https://www.dropbox.com/scl/fo/abc/hash/Day?rlkey=stem&st=knarchgi&dl=0",
+  );
+  assert.deepEqual(request, {
+    linkKey: "abc",
+    linkType: "c",
+    secureHash: "hash",
+    subPath: "Day",
+    rlkey: "stem",
+  });
+  assert.equal(sharedFolderRequest("https://www.dropbox.com/scl/fi/abc/photo.jpg?rlkey=stem"), null);
+});
+
+test("later shared-folder pages are imported with the first screen", async () => {
+  const files = await listAllSharedEntries(async (subPath, voucher) => {
+    if (subPath === "/Day") {
+      return {
+        entries: [
+          {
+            filename: "inside.jpeg",
+            href: "https://www.dropbox.com/scl/fo/abc/token/Day/inside.jpeg?rlkey=stem&dl=0",
+            is_dir: false,
+          },
+        ],
+        has_more_entries: false,
+      };
+    }
+    if (!voucher) {
+      return {
+        entries: [
+          {
+            filename: "IMG_1802.mov",
+            href: "https://www.dropbox.com/scl/fo/abc/token/IMG_1802.mov?rlkey=stem&dl=0",
+            is_dir: false,
+          },
+        ],
+        has_more_entries: true,
+        next_request_voucher: "page-2",
+      };
+    }
+    assert.equal(voucher, "page-2");
+    return {
+      entries: [
+        {
+          filename: "Photo Oct 04 2026, 1 01 05 PM.jpg",
+          href: "https://www.dropbox.com/scl/fo/abc/token/Photo%20Oct%2004%202026%2C%201%2001%2005%20PM.jpg?rlkey=stem&dl=0",
+          is_dir: false,
+        },
+        { filename: "Day", href: "https://www.dropbox.com/scl/fo/abc/hash/Day?rlkey=stem", is_dir: true },
+        {
+          filename: "notes.pdf",
+          href: "https://www.dropbox.com/scl/fo/abc/token/notes.pdf?rlkey=stem&dl=0",
+          is_dir: false,
+        },
+      ],
+      has_more_entries: false,
+    };
+  });
+  assert.deepEqual(
+    files.map((file) => file.name),
+    ["IMG_1802.mov", "inside.jpeg", "Photo Oct 04 2026, 1 01 05 PM.jpg"],
+  );
+  assert.equal(
+    files.find((file) => file.name.startsWith("Photo"))?.sourceUrl,
+    "https://www.dropbox.com/scl/fo/abc/token/Photo%20Oct%2004%202026%2C%201%2001%2005%20PM.jpg?rlkey=stem",
+  );
 });
 
 test("a full public page is marked truncated", () => {
