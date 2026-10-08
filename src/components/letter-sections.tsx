@@ -2,12 +2,14 @@
 
 import { useRef, useState } from "react";
 import { moveToSection, placementFromSections, removeFromSection } from "@/lib/section-placement";
+import { MediaLightbox, useMediaViewer } from "./media-lightbox";
 
 type PickerAsset = {
   id: string;
   name: string;
   kind: "image" | "video";
   src: string;
+  caption?: string;
 };
 
 type PickerSection = {
@@ -114,11 +116,13 @@ function PhotoCard({
   selected,
   onToggle,
   onRemove,
+  onViewFull,
 }: {
   asset: PickerAsset;
   selected: boolean;
   onToggle: (shift: boolean) => void;
   onRemove?: () => void;
+  onViewFull: () => void;
 }) {
   return (
     <div className={selected ? "picker-card on" : "picker-card"}>
@@ -134,6 +138,14 @@ function PhotoCard({
           {asset.kind === "video" ? <span className="picker-kind">Video</span> : null}
         </span>
         <span className="picker-name">{asset.name}</span>
+      </button>
+      <button
+        type="button"
+        className="text-button picker-fullsize"
+        aria-label={`View ${asset.name} full size`}
+        onClick={onViewFull}
+      >
+        Full size
       </button>
       {onRemove ? (
         <button type="button" className="picker-remove" aria-label={`Remove ${asset.name} from this section`} onClick={onRemove}>
@@ -164,6 +176,7 @@ export function LetterSections({
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [query, setQuery] = useState("");
   const anchorId = useRef<string | null>(null);
+  const viewer = useMediaViewer<PickerAsset>();
 
   const needle = query.trim().toLowerCase();
   const unassigned = placement.unassigned.filter((id) => {
@@ -260,6 +273,15 @@ export function LetterSections({
                         selected={selected.has(id)}
                         onToggle={(shift) => toggle(id, ids, shift)}
                         onRemove={() => removeIds(index, [id])}
+                        onViewFull={() =>
+                          viewer.open(
+                            asset,
+                            ids.flatMap((itemId) => {
+                              const item = byId.get(itemId);
+                              return item ? [item] : [];
+                            }),
+                          )
+                        }
                       />
                     );
                   })}
@@ -274,7 +296,8 @@ export function LetterSections({
         <p className="quiet-label">Photos still to place</p>
         <p className="muted">
           Each photo or video goes in one section. Select the previews here, then add that group to a
-          section. Anything left in this tray still shows on the family page under More from the day.
+          section. Full size opens the whole picture. Anything left in this tray still shows
+          on the family page under More from the day.
         </p>
         {assets.length > 0 && sections.length > 0 ? (
           <PlaceBar
@@ -343,6 +366,15 @@ export function LetterSections({
                       asset={asset}
                       selected={selected.has(id)}
                       onToggle={(shift) => toggle(id, unassigned, shift)}
+                      onViewFull={() =>
+                        viewer.open(
+                          asset,
+                          unassigned.flatMap((itemId) => {
+                            const item = byId.get(itemId);
+                            return item ? [item] : [];
+                          }),
+                        )
+                      }
                     />
                   );
                 })}
@@ -366,6 +398,18 @@ export function LetterSections({
           <p className="muted">Add a section, then you can place photos in it.</p>
         ) : null}
       </div>
+      {viewer.current ? (
+        <MediaLightbox
+          src={viewer.current.src}
+          name={viewer.current.name}
+          kind={viewer.current.kind}
+          caption={viewer.current.caption ?? ""}
+          position={viewer.position}
+          onClose={viewer.close}
+          onPrevious={viewer.onPrevious}
+          onNext={viewer.onNext}
+        />
+      ) : null}
     </div>
   );
 }
