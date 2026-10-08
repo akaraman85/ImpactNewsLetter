@@ -66,6 +66,19 @@ export function sectionsForAsset(sections: LetterSectionRef[], assetId: string) 
   return sections.filter((section) => section.assetIds.includes(assetId));
 }
 
+export type PreviewSize = "thumb" | "display";
+
+// Grid tiles ask for a small preview. The letter and the detail view use the
+// display size, which is the route's default, so those addresses stay stable.
+export function mediaPreviewSrc(src: string, size: PreviewSize) {
+  if (size === "display" || !src.startsWith("/api/")) return src;
+  const split = src.indexOf("?");
+  const path = split === -1 ? src : src.slice(0, split);
+  const params = new URLSearchParams(split === -1 ? "" : src.slice(split + 1));
+  params.set("size", "thumb");
+  return `${path}?${params.toString()}`;
+}
+
 export function viewerNeighbors<T extends { id: string }>(list: readonly T[], id: string) {
   const index = list.findIndex((item) => item.id === id);
   if (index < 0) {

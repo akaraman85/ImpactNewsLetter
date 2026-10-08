@@ -1,5 +1,6 @@
 "use client";
 
+import { mediaPreviewSrc } from "@/lib/media-picker";
 import { useState } from "react";
 
 export function MediaThumb({
@@ -28,7 +29,7 @@ export function MediaThumb({
     // eslint-disable-next-line @next/next/no-img-element
     <img
       className="thumb"
-      src={src}
+      src={mediaPreviewSrc(src, "thumb")}
       alt=""
       referrerPolicy="no-referrer"
       loading="lazy"
@@ -75,7 +76,7 @@ export function FullMedia({
     // eslint-disable-next-line @next/next/no-img-element
     <img
       className={className}
-      src={src}
+      src={mediaPreviewSrc(src, "display")}
       alt={alt}
       referrerPolicy="no-referrer"
       decoding="async"
