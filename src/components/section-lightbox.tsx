@@ -34,7 +34,12 @@ export function SectionLightbox({
       index={index}
       slides={slides}
       plugins={plugins}
-      carousel={{ preload: 1, imageProps: { referrerPolicy: "no-referrer" } }}
+      carousel={{
+        // The thumbnail strip only mounts the preloaded window. Preload the
+        // section, capped so a very long album does not request every display file at once.
+        preload: Math.min(12, Math.max(1, slides.length - 1)),
+        imageProps: { referrerPolicy: "no-referrer" },
+      }}
       animation={reduceMotion ? { fade: 0, swipe: 0, navigation: 0 } : undefined}
       controller={{ closeOnBackdropClick: true }}
       captions={{ descriptionTextAlign: "center", descriptionMaxLines: 4 }}
