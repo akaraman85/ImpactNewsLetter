@@ -66,3 +66,14 @@ export function removeFromSection(
     unassigned: orderedAssetIds.filter((id) => !assigned.has(id)),
   };
 }
+
+export function idsNotInSection(
+  placement: Placement,
+  orderedAssetIds: string[],
+  sectionIndex: number,
+): string[] {
+  const section = placement.sections[sectionIndex];
+  if (!section) return [];
+  const here = new Set(section);
+  return orderedAssetIds.filter((id) => !here.has(id));
+}

@@ -260,11 +260,15 @@ function PlacementLine({ assetId, sections }: { assetId: string; sections: Lette
   const matches = sectionsForAsset(sections, assetId);
   if (matches.length === 0) {
     if (sections.length === 0) {
-      return <p className="muted">Add a section in the letter, then place this file there.</p>;
+      return (
+        <p className="muted">
+          Add a section in the letter, then choose Add photos and videos on that section.
+        </p>
+      );
     }
     return (
       <p className="muted">
-        Not in a section yet. Add it in{" "}
+        Not in a section yet. Open a section and choose Add photos and videos:{" "}
         {sections.map((section, index) => (
           <span key={section.id}>
             {index > 0 ? (index === sections.length - 1 ? " or " : ", ") : null}

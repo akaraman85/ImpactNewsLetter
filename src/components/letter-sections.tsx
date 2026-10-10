@@ -1,8 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { mediaPreviewSrc } from "@/lib/media-picker";
-import { moveToSection, placementFromSections, removeFromSection } from "@/lib/section-placement";
+import {
+  idsNotInSection,
+  moveToSection,
+  placementFromSections,
+  removeFromSection,
+} from "@/lib/section-placement";
 import { MediaLightbox, useMediaViewer } from "./media-lightbox";
 import { QueuedPreview } from "./queued-preview";
 
@@ -96,12 +101,14 @@ function PickerPreview({ src, kind }: { src: string; kind: "image" | "video" }) 
 function PhotoCard({
   asset,
   selected,
+  note,
   onToggle,
   onRemove,
   onViewFull,
 }: {
   asset: PickerAsset;
   selected: boolean;
+  note?: string;
   onToggle: (shift: boolean) => void;
   onRemove?: () => void;
   onViewFull: () => void;
@@ -120,6 +127,7 @@ function PhotoCard({
           {asset.kind === "video" ? <span className="picker-kind">Video</span> : null}
         </span>
         <span className="picker-name">{asset.name}</span>
+        {note ? <span className="picker-note">{note}</span> : null}
       </button>
       <button
         type="button"
@@ -134,6 +142,102 @@ function PhotoCard({
           Remove
         </button>
       ) : null}
+    </div>
+  );
+}
+
+function SectionFilePicker({
+  id,
+  label,
+  assets,
+  placedIn,
+  onAdd,
+  onView,
+}: {
+  id: string;
+  label: string;
+  assets: PickerAsset[];
+  placedIn: Record<string, string>;
+  onAdd: (ids: string[]) => void;
+  onView: (asset: PickerAsset, list: PickerAsset[]) => void;
+}) {
+  const [picked, setPicked] = useState<Set<string>>(() => new Set());
+  const [query, setQuery] = useState("");
+  const anchorId = useRef<string | null>(null);
+  const needle = query.trim().toLowerCase();
+  const shown = assets.filter((asset) => !needle || asset.name.toLowerCase().includes(needle));
+  const shownIds = shown.map((asset) => asset.id);
+  const shownAllSelected = shownIds.length > 0 && shownIds.every((assetId) => picked.has(assetId));
+  const moves = shown.some((asset) => placedIn[asset.id]);
+
+  return (
+    <div className="section-add-panel" id={id}>
+      <div className="picker-tools">
+        <label className="field picker-filter">
+          <span>Choose photos and videos for {label}</span>
+          <input
+            type="search"
+            value={query}
+            placeholder="File name"
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.preventDefault();
+            }}
+          />
+        </label>
+        {shown.length > 1 ? (
+          <button
+            type="button"
+            className="btn secondary"
+            onClick={() => {
+              setPicked((current) => {
+                const next = new Set(current);
+                for (const assetId of shownIds) {
+                  if (shownAllSelected) next.delete(assetId);
+                  else next.add(assetId);
+                }
+                return next;
+              });
+            }}
+          >
+            {shownAllSelected ? "Clear shown" : "Select shown"}
+          </button>
+        ) : null}
+      </div>
+      {shown.length === 0 ? (
+        <p className="muted">No files match that name.</p>
+      ) : (
+        <div className="picker-grid" role="group" aria-label={`Files to add to ${label}`}>
+          {shown.map((asset) => (
+            <PhotoCard
+              key={asset.id}
+              asset={asset}
+              note={placedIn[asset.id] ? `In ${placedIn[asset.id]}` : undefined}
+              selected={picked.has(asset.id)}
+              onToggle={(shift) => {
+                setPicked((current) => toggleSelected(current, shownIds, anchorId.current, asset.id, shift));
+                anchorId.current = asset.id;
+              }}
+              onViewFull={() => onView(asset, shown)}
+            />
+          ))}
+        </div>
+      )}
+      <div className="row">
+        <button
+          type="button"
+          className="btn"
+          disabled={picked.size === 0}
+          onClick={() => {
+            onAdd([...picked]);
+            setPicked(new Set());
+            anchorId.current = null;
+          }}
+        >
+          {picked.size === 0 ? "Add to this section" : `Add ${picked.size} to this section`}
+        </button>
+      </div>
+      {moves ? <p className="muted">A file already in another section moves here.</p> : null}
     </div>
   );
 }
@@ -157,8 +261,28 @@ export function LetterSections({
   const [bodies, setBodies] = useState(() => sections.map((section) => section.body));
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [query, setQuery] = useState("");
+  const [adderIndex, setAdderIndex] = useState<number | null>(null);
   const anchorId = useRef<string | null>(null);
   const viewer = useMediaViewer<PickerAsset>();
+
+  useEffect(() => {
+    function openFromHash() {
+      const hash = window.location.hash;
+      const prefix = "#letter-section-";
+      if (!hash.startsWith(prefix)) return;
+      let id = hash.slice(prefix.length);
+      try {
+        id = decodeURIComponent(id);
+      } catch {
+        return;
+      }
+      const index = sections.findIndex((section) => section.id === id);
+      if (index >= 0) setAdderIndex(index);
+    }
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, [sections]);
 
   const needle = query.trim().toLowerCase();
   const unassigned = placement.unassigned.filter((id) => {
@@ -171,9 +295,17 @@ export function LetterSections({
     anchorId.current = id;
   }
 
-  function addTo(index: number) {
-    const ids = [...selected];
+  function addIds(index: number, ids: string[]) {
     setPlacement((current) => moveToSection(current, orderedIds, index, ids));
+    setSelected((current) => {
+      const next = new Set(current);
+      for (const id of ids) next.delete(id);
+      return next;
+    });
+  }
+
+  function addTo(index: number) {
+    addIds(index, [...selected]);
     setSelected(new Set());
     anchorId.current = null;
   }
@@ -188,6 +320,11 @@ export function LetterSections({
   }
 
   const shownAllSelected = unassigned.length > 0 && unassigned.every((id) => selected.has(id));
+  const placedIn: Record<string, string> = {};
+  placement.sections.forEach((ids, sectionIndex) => {
+    const name = sectionLabel(headings[sectionIndex] ?? "", sectionIndex);
+    for (const id of ids) placedIn[id] = name;
+  });
 
   function canAddTo(index: number) {
     const here = new Set(placement.sections[index]);
@@ -208,6 +345,11 @@ export function LetterSections({
         const ids = placement.sections[index] ?? [];
         const selectedHere = ids.filter((id) => selected.has(id));
         const label = sectionLabel(headings[index] ?? "", index);
+        const candidates = idsNotInSection(placement, orderedIds, index).flatMap((id) => {
+          const asset = byId.get(id);
+          return asset ? [asset] : [];
+        });
+        const adderOpen = adderIndex === index;
         return (
           <fieldset className="section-card" id={`letter-section-${section.id}`} key={section.id}>
             <input type="hidden" name={`section-id-${index}`} value={section.id} />
@@ -235,15 +377,48 @@ export function LetterSections({
               <div className="row">
                 <span className="quiet-label">In this section</span>
                 <span className="muted">{ids.length}</span>
+                {candidates.length > 0 ? (
+                  <button
+                    type="button"
+                    className={ids.length === 0 ? "btn" : "btn secondary"}
+                    aria-expanded={adderOpen}
+                    aria-controls={`section-add-${section.id}`}
+                    onClick={() => setAdderIndex((current) => (current === index ? null : index))}
+                  >
+                    {adderOpen ? "Hide files" : "Add photos and videos"}
+                  </button>
+                ) : assets.length > 0 ? (
+                  <span className="muted">All included files are in this section.</span>
+                ) : null}
                 {selectedHere.length > 0 ? (
                   <button type="button" className="btn secondary" onClick={() => removeIds(index, selectedHere)}>
                     Remove selected
                   </button>
                 ) : null}
               </div>
-              {ids.length === 0 ? (
-                <p className="muted">No photos in this section yet. Select them once, in the tray below.</p>
-              ) : (
+              {assets.length === 0 ? (
+                <p className="muted">
+                  Include photos or videos in <a href="#photos-library">Photos and videos</a> and save, then add them here.
+                </p>
+              ) : null}
+              {adderOpen && candidates.length > 0 ? (
+                <SectionFilePicker
+                  id={`section-add-${section.id}`}
+                  label={label}
+                  assets={candidates}
+                  placedIn={placedIn}
+                  onAdd={(picked) => {
+                    addIds(index, picked);
+                    setAdderIndex(null);
+                  }}
+                  onView={(asset, list) => viewer.open(asset, list)}
+                />
+              ) : null}
+              {ids.length === 0 && !adderOpen ? (
+                assets.length === 0 ? null : (
+                  <p className="muted">Nothing in this section yet.</p>
+                )
+              ) : ids.length === 0 ? null : (
                 <div className="picker-grid" role="group" aria-label={`Photos in ${label}`}>
                   {ids.map((id) => {
                     const asset = byId.get(id);
@@ -277,9 +452,9 @@ export function LetterSections({
       <div className="stack">
         <p className="quiet-label">Photos still to place</p>
         <p className="muted">
-          Each photo or video goes in one section. Select the previews here, then add that group to a
-          section. Full size opens the whole picture. Anything left in this tray still shows
-          on the family page under More from the day.
+          Each photo or video goes in one section. On a section, choose Add photos and videos, or
+          select files here and add that group. Full size opens the whole picture. Anything left in
+          this tray still shows on the family page under More from the day.
         </p>
         {assets.length > 0 && sections.length > 0 ? (
           <PlaceBar
@@ -294,7 +469,9 @@ export function LetterSections({
           />
         ) : null}
         {assets.length === 0 ? (
-          <p className="muted">No photos are included yet. Import a folder, or check Include on the photos above.</p>
+          <p className="muted">
+            No photos or videos are included yet. In <a href="#photos-library">Photos and videos</a>, check Include and save.
+          </p>
         ) : placement.unassigned.length === 0 ? (
           <p className="muted">Every included photo is in a section.</p>
         ) : (
