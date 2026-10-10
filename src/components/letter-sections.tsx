@@ -666,8 +666,7 @@ export function LetterSections({
         <p className="muted">
           Each photo or video goes in one section. The main image stays out of that list. On a
           section, choose Add photos and videos, or select files here and add that group. Full size
-          opens the whole picture. Anything left in this tray still shows on the family page under
-          More from the day.
+          opens the whole picture. Photos left in this tray stay off the family page.
         </p>
         {assets.length > 0 && editorSections.length > 0 ? (
           <PlaceBar

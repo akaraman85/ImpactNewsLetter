@@ -3,7 +3,6 @@ import { Notice } from "@/components/admin-shell";
 import { SubmitButton } from "@/components/submit-button";
 import { unlockViewer } from "@/lib/actions";
 import { viewerGranted } from "@/lib/auth";
-import { placeUnusedAssets } from "@/lib/content";
 import { findActiveShare, getSettings, issueContent, listAssets } from "@/lib/data";
 import { formatEventDate } from "@/lib/format";
 import { hashToken, isShareToken } from "@/lib/secrets";
@@ -65,10 +64,7 @@ export default async function ViewerPage({
     <NewsletterView
       programName={settings.programName}
       dateLabel={formatEventDate(found.issue.eventDate)}
-      content={placeUnusedAssets(
-        issueContent(found.issue),
-        media.filter((asset) => asset.included).map((asset) => asset.id),
-      )}
+      content={issueContent(found.issue)}
       assets={media
         .filter((asset) => asset.included)
         .map((asset) => ({
