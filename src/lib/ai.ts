@@ -1,6 +1,6 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import { placeUnusedAssets, type NewsletterContent } from "./content";
+import { normalizeContent, placeUnusedAssets, type NewsletterContent } from "./content";
 import type { Asset } from "./data";
 
 const sectionSchema = z.object({
@@ -25,6 +25,7 @@ export async function draftNewsletter(input: {
   notes: string;
   programName: string;
   assets: Asset[];
+  coverAssetId?: string;
 }): Promise<NewsletterContent> {
   const included = input.assets.filter((asset) => asset.included);
   const catalog = included
@@ -70,17 +71,24 @@ export async function draftNewsletter(input: {
     id: `section-${index + 1}`,
     heading: section.heading.trim(),
     body: section.body.trim(),
+    hidden: false,
     assetIds: section.assetIds.filter((id) => known.has(id)),
   }));
+  const coverAssetId =
+    input.coverAssetId &&
+    included.some((asset) => asset.id === input.coverAssetId && asset.kind !== "video")
+      ? input.coverAssetId
+      : "";
 
   return placeUnusedAssets(
-    {
+    normalizeContent({
       headline: output.headline.trim() || input.title,
       subtitle: output.subtitle.trim(),
       intro: output.intro.trim(),
+      coverAssetId,
       sections,
       closing: output.closing.trim(),
-    },
+    }),
     included.map((asset) => asset.id),
   );
 }

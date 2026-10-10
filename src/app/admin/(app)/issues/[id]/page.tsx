@@ -15,7 +15,6 @@ import {
   saveLetter,
   unpublishIssue,
   writeDraft,
-  addSection,
 } from "@/lib/actions";
 import { getIssue, issueContent, listAssets, listShareLinks } from "@/lib/data";
 import type { LetterSectionRef } from "@/lib/media-picker";
@@ -120,9 +119,10 @@ export default async function IssuePage({
         <h2>Photos and videos</h2>
         <p className="muted">
           Imported files stay in Dropbox. The letter only stores a reference and loads each file
-          from Dropbox when someone opens it. Check Include and save photo choices. Then open a
-          letter section and choose Add photos and videos. Select a file here to see the whole
-          picture, and use Full size when you want it as large as the window.
+          from Dropbox when someone opens it. Check Include and save photo choices. Then choose
+          one main image in the letter, or open a section and choose Add photos and videos. Select
+          a file here to see the whole picture, and use Full size when you want it as large as the
+          window.
         </p>
         <form className="row" action={addMediaLink}>
           <input type="hidden" name="id" value={issue.id} />
@@ -143,7 +143,12 @@ export default async function IssuePage({
             <form id="photos" action={saveAssets}>
               <input type="hidden" name="id" value={issue.id} />
             </form>
-            <MediaLibrary issueId={issue.id} assets={library} sections={letterSections} />
+            <MediaLibrary
+              issueId={issue.id}
+              assets={library}
+              sections={letterSections}
+              coverAssetId={content.coverAssetId}
+            />
             <div className="row">
               <button className="btn" form="photos" type="submit">
                 Save photo choices
@@ -155,8 +160,11 @@ export default async function IssuePage({
 
       <form id="letter" className="panel stack" action={saveLetter}>
         <h2>The letter</h2>
+        <p className="muted">
+          Pick one photo to lead the whole letter. Add a section, hide one from families, or remove
+          it. Save the letter when it looks right.
+        </p>
         <input type="hidden" name="id" value={issue.id} />
-        <input type="hidden" name="sectionCount" value={content.sections.length} />
         <label className="field">
           <span>Headline</span>
           <input name="headline" defaultValue={content.headline} />
@@ -171,6 +179,7 @@ export default async function IssuePage({
         </label>
         <LetterSections
           sections={content.sections}
+          coverAssetId={content.coverAssetId}
           assets={media
             .filter((asset) => asset.included)
             .map((asset) => ({
@@ -187,9 +196,6 @@ export default async function IssuePage({
         </label>
         <div className="row">
           <SubmitButton>Save letter</SubmitButton>
-          <button className="btn secondary" formAction={addSection} type="submit">
-            Add a section
-          </button>
         </div>
       </form>
 

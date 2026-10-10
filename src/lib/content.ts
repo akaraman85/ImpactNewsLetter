@@ -3,12 +3,14 @@ export type NewsletterSection = {
   heading: string;
   body: string;
   assetIds: string[];
+  hidden: boolean;
 };
 
 export type NewsletterContent = {
   headline: string;
   subtitle: string;
   intro: string;
+  coverAssetId: string;
   sections: NewsletterSection[];
   closing: string;
 };
@@ -18,6 +20,7 @@ export function emptyContent(headline = ""): NewsletterContent {
     headline,
     subtitle: "",
     intro: "",
+    coverAssetId: "",
     sections: [],
     closing: "",
   };
@@ -45,16 +48,43 @@ export function parseContent(value: unknown, fallbackHeadline = ""): NewsletterC
             heading: asString(item.heading),
             body: asString(item.body),
             assetIds,
+            hidden: item.hidden === true,
           },
         ];
       })
     : [];
-  return {
+  return normalizeContent({
     headline: asString(record.headline) || fallbackHeadline,
     subtitle: asString(record.subtitle),
     intro: asString(record.intro),
+    coverAssetId: asString(record.coverAssetId),
     sections,
     closing: asString(record.closing),
+  });
+}
+
+// The main image leads the letter once. A hidden section stays in the editor
+// and stays off the family page, with its photos still claimed.
+export function normalizeContent(content: NewsletterContent): NewsletterContent {
+  const coverAssetId = content.coverAssetId.trim();
+  const seen = new Set<string>();
+  if (coverAssetId) seen.add(coverAssetId);
+  return {
+    ...content,
+    coverAssetId,
+    sections: content.sections.map((section) => {
+      const assetIds: string[] = [];
+      for (const id of section.assetIds) {
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        assetIds.push(id);
+      }
+      return {
+        ...section,
+        hidden: section.hidden === true,
+        assetIds,
+      };
+    }),
   };
 }
 
@@ -63,28 +93,33 @@ export function placeUnusedAssets(
   includedIds: string[],
 ): NewsletterContent {
   const used = new Set(content.sections.flatMap((section) => section.assetIds));
+  if (content.coverAssetId) used.add(content.coverAssetId);
   const missing = includedIds.filter((id) => !used.has(id));
   if (missing.length === 0) return content;
-  const more = content.sections.find((section) => section.id === "more-from-the-day");
-  if (more) {
+  const moreIndex = content.sections.findIndex(
+    (section) => section.id === "more-from-the-day" && !section.hidden,
+  );
+  if (moreIndex >= 0) {
     return {
       ...content,
-      sections: content.sections.map((section) =>
-        section.id === "more-from-the-day"
-          ? { ...section, assetIds: [...section.assetIds, ...missing] }
-          : section,
+      sections: content.sections.map((section, index) =>
+        index === moreIndex ? { ...section, assetIds: [...section.assetIds, ...missing] } : section,
       ),
     };
   }
+  const id = content.sections.some((section) => section.id === "more-from-the-day")
+    ? "more-from-the-day-open"
+    : "more-from-the-day";
   return {
     ...content,
     sections: [
       ...content.sections,
       {
-        id: "more-from-the-day",
+        id,
         heading: "More from the day",
         body: "",
         assetIds: missing,
+        hidden: false,
       },
     ],
   };

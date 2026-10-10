@@ -33,10 +33,12 @@ export function MediaLibrary({
   issueId,
   assets,
   sections,
+  coverAssetId = "",
 }: {
   issueId: string;
   assets: EditorMedia[];
   sections: LetterSectionRef[];
+  coverAssetId?: string;
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<LibraryFilter>("all");
@@ -189,7 +191,7 @@ export function MediaLibrary({
               <FullMedia key={open.id} className="detail-photo" src={open.src} alt={open.name} kind="video" />
             </div>
           )}
-          <PlacementLine assetId={open.id} sections={sections} />
+          <PlacementLine assetId={open.id} sections={sections} coverAssetId={coverAssetId} />
           <label className="field">
             <span>Caption</span>
             <input
@@ -256,7 +258,18 @@ export function MediaLibrary({
   );
 }
 
-function PlacementLine({ assetId, sections }: { assetId: string; sections: LetterSectionRef[] }) {
+function PlacementLine({
+  assetId,
+  sections,
+  coverAssetId,
+}: {
+  assetId: string;
+  sections: LetterSectionRef[];
+  coverAssetId: string;
+}) {
+  if (assetId === coverAssetId) {
+    return <p className="muted">This photo is the main image for the letter.</p>;
+  }
   const matches = sectionsForAsset(sections, assetId);
   if (matches.length === 0) {
     if (sections.length === 0) {

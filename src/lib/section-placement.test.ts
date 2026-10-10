@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  dropSection,
+  excludeCover,
   idsNotInSection,
+  insertSection,
   moveToSection,
   placementFromSections,
   removeFromSection,
@@ -49,6 +52,36 @@ test("a section can add any included file that is not already in it", () => {
   assert.deepEqual(idsNotInSection(placement, order, 0), ["a", "c", "d", "e"]);
   assert.deepEqual(idsNotInSection(placement, order, 1), ["a", "b", "c", "e"]);
   assert.deepEqual(idsNotInSection(placement, order, 3), []);
+});
+
+test("the main image stays out of every section and the leftover pool", () => {
+  const start = placementFromSections(
+    [
+      ["b", "a"],
+      ["d"],
+    ],
+    order,
+  );
+  const held = excludeCover(start, order, "a");
+  assert.deepEqual(held.sections, [["b"], ["d"]]);
+  assert.deepEqual(held.unassigned, ["c", "e"]);
+  const cleared = excludeCover(held, order, "");
+  assert.deepEqual(cleared.unassigned, ["a", "c", "e"]);
+});
+
+test("removing a section returns its photos and keeps the main image out", () => {
+  const start = excludeCover(placementFromSections([["b", "a"], ["d"]], order), order, "a");
+  const next = dropSection(start, order, 0, "a");
+  assert.deepEqual(next.sections, [["d"]]);
+  assert.deepEqual(next.unassigned, ["b", "c", "e"]);
+  assert.equal(dropSection(next, order, 3, "a"), next);
+});
+
+test("a new section starts empty", () => {
+  const start = placementFromSections([["b"]], order);
+  const next = insertSection(start);
+  assert.deepEqual(next.sections, [["b"], []]);
+  assert.deepEqual(next.unassigned, start.unassigned);
 });
 
 test("removing photos returns them to the pool in folder order", () => {

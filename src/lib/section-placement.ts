@@ -67,6 +67,41 @@ export function removeFromSection(
   };
 }
 
+export function excludeCover(placement: Placement, orderedAssetIds: string[], coverId: string): Placement {
+  const sections = coverId
+    ? placement.sections.map((list) => list.filter((id) => id !== coverId))
+    : placement.sections;
+  const assigned = new Set(sections.flat());
+  return {
+    sections,
+    unassigned: orderedAssetIds.filter((id) => id !== coverId && !assigned.has(id)),
+  };
+}
+
+export function dropSection(
+  placement: Placement,
+  orderedAssetIds: string[],
+  sectionIndex: number,
+  coverId: string,
+): Placement {
+  if (!placement.sections[sectionIndex]) return placement;
+  return excludeCover(
+    {
+      sections: placement.sections.filter((_, index) => index !== sectionIndex),
+      unassigned: [],
+    },
+    orderedAssetIds,
+    coverId,
+  );
+}
+
+export function insertSection(placement: Placement): Placement {
+  return {
+    sections: [...placement.sections, []],
+    unassigned: placement.unassigned,
+  };
+}
+
 export function idsNotInSection(
   placement: Placement,
   orderedAssetIds: string[],
