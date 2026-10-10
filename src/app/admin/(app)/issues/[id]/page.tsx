@@ -116,13 +116,13 @@ export default async function IssuePage({
         </div>
       </form>
 
-      <section className="panel stack">
+      <section className="panel stack" id="photos-library">
         <h2>Photos and videos</h2>
         <p className="muted">
           Imported files stay in Dropbox. The letter only stores a reference and loads each file
-          from Dropbox when someone opens it. Include a file to show it to families, then place it
-          from the tray in the letter. Select a photo to see the whole picture, and use Full size
-          when you want it as large as the window.
+          from Dropbox when someone opens it. Check Include and save photo choices. Then open a
+          letter section and choose Add photos and videos. Select a file here to see the whole
+          picture, and use Full size when you want it as large as the window.
         </p>
         <form className="row" action={addMediaLink}>
           <input type="hidden" name="id" value={issue.id} />

@@ -635,6 +635,27 @@ textarea {
   scroll-margin-top: 1rem;
 }
 
+.section-add-panel {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--paper-2);
+}
+
+.section-add-panel .picker-grid {
+  max-height: 26rem;
+  overflow: auto;
+  padding: 0.1rem;
+}
+
+.picker-note {
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.3;
+}
+
 .letter-sections {
   display: grid;
   gap: 1rem;
