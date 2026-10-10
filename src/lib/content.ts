@@ -88,43 +88,6 @@ export function normalizeContent(content: NewsletterContent): NewsletterContent 
   };
 }
 
-export function placeUnusedAssets(
-  content: NewsletterContent,
-  includedIds: string[],
-): NewsletterContent {
-  const used = new Set(content.sections.flatMap((section) => section.assetIds));
-  if (content.coverAssetId) used.add(content.coverAssetId);
-  const missing = includedIds.filter((id) => !used.has(id));
-  if (missing.length === 0) return content;
-  const moreIndex = content.sections.findIndex(
-    (section) => section.id === "more-from-the-day" && !section.hidden,
-  );
-  if (moreIndex >= 0) {
-    return {
-      ...content,
-      sections: content.sections.map((section, index) =>
-        index === moreIndex ? { ...section, assetIds: [...section.assetIds, ...missing] } : section,
-      ),
-    };
-  }
-  const id = content.sections.some((section) => section.id === "more-from-the-day")
-    ? "more-from-the-day-open"
-    : "more-from-the-day";
-  return {
-    ...content,
-    sections: [
-      ...content.sections,
-      {
-        id,
-        heading: "More from the day",
-        body: "",
-        assetIds: missing,
-        hidden: false,
-      },
-    ],
-  };
-}
-
 export function paragraphs(text: string) {
   return text
     .split(/\n{2,}/)

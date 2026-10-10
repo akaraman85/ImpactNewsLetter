@@ -1,6 +1,6 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import { normalizeContent, placeUnusedAssets, type NewsletterContent } from "./content";
+import { normalizeContent, type NewsletterContent } from "./content";
 import type { Asset } from "./data";
 
 const sectionSchema = z.object({
@@ -48,6 +48,7 @@ export async function draftNewsletter(input: {
       "Do not add a child's full name unless the notes already include it.",
       "Write the way a trusted teacher would write to parents: warm, specific, and brief.",
       "Group the photos into a few sections. Use each supplied photo id at most once.",
+      "Do not add a catch-all section for leftover photos, including one titled More from the day. Leave a photo out when it does not belong with a story.",
       "If the notes are thin, keep the writing thin too. A short true note is better than a polished invention.",
     ].join(" "),
     prompt: [
@@ -80,15 +81,12 @@ export async function draftNewsletter(input: {
       ? input.coverAssetId
       : "";
 
-  return placeUnusedAssets(
-    normalizeContent({
-      headline: output.headline.trim() || input.title,
-      subtitle: output.subtitle.trim(),
-      intro: output.intro.trim(),
-      coverAssetId,
-      sections,
-      closing: output.closing.trim(),
-    }),
-    included.map((asset) => asset.id),
-  );
+  return normalizeContent({
+    headline: output.headline.trim() || input.title,
+    subtitle: output.subtitle.trim(),
+    intro: output.intro.trim(),
+    coverAssetId,
+    sections,
+    closing: output.closing.trim(),
+  });
 }

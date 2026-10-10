@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { emptyContent, normalizeContent, parseContent, placeUnusedAssets } from "./content.ts";
+import { emptyContent, normalizeContent, parseContent } from "./content.ts";
 import {
   canonicalSharedLink,
   dropboxDownloadUrl,
@@ -44,80 +44,22 @@ test("parseContent keeps the main image and which sections are hidden", () => {
   assert.deepEqual(content.sections[1]?.assetIds, ["1"]);
 });
 
-test("the main image is not treated as an unused photo", () => {
-  const placed = placeUnusedAssets(
-    normalizeContent({
-      headline: "Day",
-      subtitle: "",
-      intro: "",
-      closing: "",
-      coverAssetId: "photo-2",
-      sections: [{ id: "a", heading: "One", body: "", assetIds: ["photo-1", "photo-2"], hidden: false }],
-    }),
-    ["photo-1", "photo-2"],
-  );
-  assert.equal(placed.sections.length, 1);
-  assert.deepEqual(placed.sections[0]?.assetIds, ["photo-1"]);
-});
-
-test("a hidden more-from-the-day section does not swallow leftover photos", () => {
-  const placed = placeUnusedAssets(
-    {
-      headline: "Day",
-      subtitle: "",
-      intro: "",
-      closing: "",
-      coverAssetId: "",
-      sections: [
-        {
-          id: "more-from-the-day",
-          heading: "More from the day",
-          body: "",
-          assetIds: ["photo-1"],
-          hidden: true,
-        },
-      ],
-    },
-    ["photo-1", "photo-2"],
-  );
-  assert.equal(placed.sections.length, 2);
-  assert.equal(placed.sections[1]?.id, "more-from-the-day-open");
-  assert.equal(placed.sections[1]?.hidden, false);
-  assert.deepEqual(placed.sections[1]?.assetIds, ["photo-2"]);
+test("the main image stays out of its section", () => {
+  const content = normalizeContent({
+    headline: "Day",
+    subtitle: "",
+    intro: "",
+    closing: "",
+    coverAssetId: "photo-2",
+    sections: [{ id: "a", heading: "One", body: "", assetIds: ["photo-1", "photo-2"], hidden: false }],
+  });
+  assert.equal(content.sections.length, 1);
+  assert.deepEqual(content.sections[0]?.assetIds, ["photo-1"]);
 });
 
 test("empty content uses the fallback headline", () => {
   assert.equal(parseContent(null, "Picnic").headline, "Picnic");
   assert.deepEqual(emptyContent("Picnic").sections, []);
-});
-
-test("unused photos join an existing more-from-the-day section", () => {
-  const placed = placeUnusedAssets(
-    {
-      headline: "Day",
-      subtitle: "",
-      intro: "",
-      closing: "",
-      sections: [{ id: "more-from-the-day", heading: "More from the day", body: "", assetIds: ["photo-1"] }],
-    },
-    ["photo-1", "photo-2"],
-  );
-  assert.equal(placed.sections.length, 1);
-  assert.deepEqual(placed.sections[0]?.assetIds, ["photo-1", "photo-2"]);
-});
-
-test("unused photos are gathered into a last section", () => {
-  const placed = placeUnusedAssets(
-    {
-      headline: "Day",
-      subtitle: "",
-      intro: "",
-      closing: "",
-      sections: [{ id: "a", heading: "One", body: "", assetIds: ["photo-1"] }],
-    },
-    ["photo-1", "photo-2"],
-  );
-  assert.deepEqual(placed.sections.at(-1)?.assetIds, ["photo-2"]);
 });
 
 test("dropbox links become raw file urls", () => {
