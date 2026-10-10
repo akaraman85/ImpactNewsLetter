@@ -1,6 +1,6 @@
 import { paragraphs, type NewsletterContent, type NewsletterSection } from "@/lib/content";
-import { mediaStillSrc } from "@/lib/media-picker";
 import { planStoryLayouts, storyIsWide } from "@/lib/newsletter-layout";
+import { SectionGallery } from "./section-gallery";
 
 export type ViewAsset = {
   id: string;
@@ -24,44 +24,11 @@ function Swoosh() {
   );
 }
 
-function MediaFrame({ asset }: { asset: ViewAsset }) {
-  const label = asset.caption || asset.name;
-  return (
-    <figure className={asset.kind === "video" ? "frame is-video" : "frame"}>
-      <div className="frame-media">
-        {asset.kind === "video" ? (
-          <video
-            controls
-            playsInline
-            preload="metadata"
-            poster={mediaStillSrc(asset.src, "display")}
-            src={asset.src}
-            aria-label={label}
-          />
-        ) : (
-          // Dropbox links expire and are not served through the image optimizer.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={asset.src}
-            alt={asset.caption ? "" : asset.name}
-            referrerPolicy="no-referrer"
-            loading="lazy"
-            decoding="async"
-          />
-        )}
-      </div>
-      {asset.caption ? <figcaption>{asset.caption}</figcaption> : null}
-    </figure>
-  );
-}
-
-function Mosaic({ assets }: { assets: ViewAsset[] }) {
+function Mosaic({ assets, span }: { assets: ViewAsset[]; span: "card" | "feature" }) {
   if (assets.length === 0) return null;
   return (
     <div className="mosaic">
-      {assets.map((asset) => (
-        <MediaFrame key={asset.id} asset={asset} />
-      ))}
+      <SectionGallery key={assets.map((asset) => asset.id).join("\0")} assets={assets} span={span} />
     </div>
   );
 }
@@ -89,9 +56,7 @@ function Story({
   shape: "text" | "album" | "split" | "stack";
 }) {
   const body = paragraphs(section.body);
-  const clips =
-    assets.length > 0 && assets.every((asset) => asset.kind === "video");
-  const className = `letter-story tone-${index % 3} ${span} shape-${shape}${clips ? " clips" : ""}`;
+  const className = `letter-story tone-${index % 3} ${span} shape-${shape}`;
   return (
     <section className={className}>
       <div className="story-heading">
@@ -109,7 +74,7 @@ function Story({
           ))}
         </div>
       ) : null}
-      <Mosaic assets={assets} />
+      <Mosaic assets={assets} span={span} />
     </section>
   );
 }
