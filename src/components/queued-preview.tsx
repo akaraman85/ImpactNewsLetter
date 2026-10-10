@@ -19,6 +19,7 @@ export function QueuedPreview({
   fallback,
   eager = false,
   draggable,
+  onReady,
 }: {
   src: string;
   alt: string;
@@ -26,6 +27,7 @@ export function QueuedPreview({
   fallback: ReactNode;
   eager?: boolean;
   draggable?: boolean;
+  onReady?: (image: HTMLImageElement) => void;
 }) {
   const holder = useRef<HTMLDivElement>(null);
   const releaseRef = useRef<(() => void) | null>(null);
@@ -84,7 +86,10 @@ export function QueuedPreview({
       referrerPolicy="no-referrer"
       decoding="async"
       draggable={draggable}
-      onLoad={settle}
+      onLoad={(event) => {
+        settle();
+        onReady?.(event.currentTarget);
+      }}
       onError={() => {
         settle();
         if (attempt + 1 >= MAX_ATTEMPTS) {
