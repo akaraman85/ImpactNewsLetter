@@ -1,7 +1,7 @@
 export type StoryLayout = "card" | "feature";
 
 export function storyIsWide(input: { id: string; imageCount: number; videoCount: number }) {
-  if (input.id === "more-from-the-day") return true;
+  if (input.id.startsWith("more-from-the-day")) return true;
   if (input.videoCount >= 2) return true;
   return input.imageCount >= 3;
 }

@@ -3,12 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { mediaPreviewSrc } from "@/lib/media-picker";
 import {
+  dropSection,
+  excludeCover,
   idsNotInSection,
+  insertSection,
   moveToSection,
   placementFromSections,
   removeFromSection,
 } from "@/lib/section-placement";
 import { MediaLightbox, useMediaViewer } from "./media-lightbox";
+import { FullMedia } from "./media-thumb";
 import { QueuedPreview } from "./queued-preview";
 
 type PickerAsset = {
@@ -24,6 +28,14 @@ type PickerSection = {
   heading: string;
   body: string;
   assetIds: string[];
+  hidden: boolean;
+};
+
+type EditorSection = {
+  id: string;
+  heading: string;
+  body: string;
+  hidden: boolean;
 };
 
 function PlaceBar({
@@ -63,9 +75,93 @@ function PlaceBar({
   );
 }
 
-function sectionLabel(heading: string, index: number) {
+function sectionLabel(heading: string, index: number, hidden = false) {
   const trimmed = heading.trim();
-  return trimmed || `Section ${index + 1}`;
+  const name = trimmed || `Section ${index + 1}`;
+  return hidden ? `${name} (hidden)` : name;
+}
+
+function CoverPicker({
+  images,
+  coverId,
+  placedIn,
+  onChoose,
+  onView,
+}: {
+  images: PickerAsset[];
+  coverId: string;
+  placedIn: Record<string, string>;
+  onChoose: (id: string) => void;
+  onView: (asset: PickerAsset, list: PickerAsset[]) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const needle = query.trim().toLowerCase();
+  const shown = images.filter((asset) => !needle || asset.name.toLowerCase().includes(needle));
+  const cover = images.find((asset) => asset.id === coverId);
+
+  return (
+    <div className="stack">
+      <div className="row">
+        <span className="quiet-label">Main image</span>
+        {cover ? <span className="muted">{cover.name}</span> : <span className="muted">None chosen</span>}
+        {coverId ? (
+          <button type="button" className="text-button" onClick={() => onChoose(coverId)}>
+            Clear
+          </button>
+        ) : null}
+      </div>
+      <p className="muted">One photo leads the whole letter. Choosing it takes that photo out of the sections.</p>
+      {coverId && !cover ? (
+        <p className="muted">The saved main image is not an included photo. Clear it or choose another.</p>
+      ) : null}
+      {cover ? (
+        <figure className="cover-choice">
+          <FullMedia className="cover-choice-photo" src={cover.src} alt="" kind="image" />
+          <figcaption>{cover.caption || cover.name}</figcaption>
+        </figure>
+      ) : null}
+      {images.length === 0 ? (
+        <p className="muted">
+          Include a photo in <a href="#photos-library">Photos and videos</a> and save, then choose it here.
+        </p>
+      ) : (
+        <>
+          {images.length > 8 ? (
+            <label className="field picker-filter">
+              <span>Filter photos</span>
+              <input
+                type="search"
+                value={query}
+                placeholder="File name"
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") event.preventDefault();
+                }}
+              />
+            </label>
+          ) : null}
+          {shown.length === 0 ? (
+            <p className="muted">No photos match that name.</p>
+          ) : (
+            <div className="picker-grid cover-grid" role="group" aria-label="Choose the main image">
+              {shown.map((asset) => (
+                <PhotoCard
+                  key={asset.id}
+                  asset={asset}
+                  note={asset.id === coverId ? "Main image" : placedIn[asset.id]}
+                  selected={asset.id === coverId}
+                  idleLabel="Use as the main image"
+                  selectedLabel="Clear the main image"
+                  onToggle={() => onChoose(asset.id)}
+                  onViewFull={() => onView(asset, shown)}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
 }
 
 function toggleSelected(current: Set<string>, list: string[], anchorId: string | null, id: string, shift: boolean) {
@@ -105,6 +201,8 @@ function PhotoCard({
   onToggle,
   onRemove,
   onViewFull,
+  idleLabel = "Select",
+  selectedLabel = "Deselect",
 }: {
   asset: PickerAsset;
   selected: boolean;
@@ -112,6 +210,8 @@ function PhotoCard({
   onToggle: (shift: boolean) => void;
   onRemove?: () => void;
   onViewFull: () => void;
+  idleLabel?: string;
+  selectedLabel?: string;
 }) {
   return (
     <div className={selected ? "picker-card on" : "picker-card"}>
@@ -119,7 +219,7 @@ function PhotoCard({
         type="button"
         className="picker-hit"
         aria-pressed={selected}
-        aria-label={`${selected ? "Deselect" : "Select"} ${asset.name}`}
+        aria-label={`${selected ? selectedLabel : idleLabel} ${asset.name}`}
         onClick={(event) => onToggle(event.shiftKey)}
       >
         <span className="picker-frame">
@@ -245,23 +345,38 @@ function SectionFilePicker({
 export function LetterSections({
   sections,
   assets,
+  coverAssetId,
 }: {
   sections: PickerSection[];
   assets: PickerAsset[];
+  coverAssetId: string;
 }) {
   const orderedIds = assets.map((asset) => asset.id);
   const byId = new Map(assets.map((asset) => [asset.id, asset]));
+  const images = assets.filter((asset) => asset.kind === "image");
+  const [editorSections, setEditorSections] = useState<EditorSection[]>(() =>
+    sections.map((section) => ({
+      id: section.id,
+      heading: section.heading,
+      body: section.body,
+      hidden: section.hidden,
+    })),
+  );
+  const [coverId, setCoverId] = useState(coverAssetId);
   const [placement, setPlacement] = useState(() =>
-    placementFromSections(
-      sections.map((section) => section.assetIds),
+    excludeCover(
+      placementFromSections(
+        sections.map((section) => section.assetIds),
+        orderedIds,
+      ),
       orderedIds,
+      coverAssetId,
     ),
   );
-  const [headings, setHeadings] = useState(() => sections.map((section) => section.heading));
-  const [bodies, setBodies] = useState(() => sections.map((section) => section.body));
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [query, setQuery] = useState("");
   const [adderIndex, setAdderIndex] = useState<number | null>(null);
+  const [pendingRemove, setPendingRemove] = useState<number | null>(null);
   const anchorId = useRef<string | null>(null);
   const viewer = useMediaViewer<PickerAsset>();
 
@@ -295,11 +410,16 @@ export function LetterSections({
     anchorId.current = id;
   }
 
+  function placeableIds() {
+    return coverId ? orderedIds.filter((id) => id !== coverId) : orderedIds;
+  }
+
   function addIds(index: number, ids: string[]) {
-    setPlacement((current) => moveToSection(current, orderedIds, index, ids));
+    const moving = ids.filter((id) => id !== coverId);
+    setPlacement((current) => moveToSection(current, placeableIds(), index, moving));
     setSelected((current) => {
       const next = new Set(current);
-      for (const id of ids) next.delete(id);
+      for (const id of moving) next.delete(id);
       return next;
     });
   }
@@ -311,7 +431,7 @@ export function LetterSections({
   }
 
   function removeIds(index: number, ids: string[]) {
-    setPlacement((current) => removeFromSection(current, orderedIds, index, ids));
+    setPlacement((current) => removeFromSection(current, placeableIds(), index, ids));
     setSelected((current) => {
       const next = new Set(current);
       for (const id of ids) next.delete(id);
@@ -319,58 +439,144 @@ export function LetterSections({
     });
   }
 
+  function chooseCover(id: string) {
+    const next = coverId === id ? "" : id;
+    setCoverId(next);
+    setPlacement((current) => excludeCover(current, orderedIds, next));
+    setSelected((current) => {
+      if (!next || !current.has(next)) return current;
+      const copy = new Set(current);
+      copy.delete(next);
+      return copy;
+    });
+  }
+
+  function addBlankSection() {
+    const id = crypto.randomUUID();
+    setEditorSections((current) => [...current, { id, heading: "", body: "", hidden: false }]);
+    setPlacement((current) => insertSection(current));
+    setPendingRemove(null);
+    window.setTimeout(() => {
+      document.getElementById(`letter-section-${id}`)?.scrollIntoView({ block: "nearest" });
+    }, 0);
+  }
+
+  function removeSectionAt(index: number) {
+    setEditorSections((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setPlacement((current) => dropSection(current, orderedIds, index, coverId));
+    setAdderIndex((current) => {
+      if (current === null || current === index) return null;
+      return current > index ? current - 1 : current;
+    });
+    setPendingRemove(null);
+  }
+
+  function toggleHidden(index: number) {
+    setEditorSections((current) =>
+      current.map((section, itemIndex) =>
+        itemIndex === index ? { ...section, hidden: !section.hidden } : section,
+      ),
+    );
+  }
+
+  function updateSection(index: number, patch: Partial<Pick<EditorSection, "heading" | "body">>) {
+    setEditorSections((current) =>
+      current.map((section, itemIndex) => (itemIndex === index ? { ...section, ...patch } : section)),
+    );
+  }
+
   const shownAllSelected = unassigned.length > 0 && unassigned.every((id) => selected.has(id));
   const placedIn: Record<string, string> = {};
   placement.sections.forEach((ids, sectionIndex) => {
-    const name = sectionLabel(headings[sectionIndex] ?? "", sectionIndex);
+    const section = editorSections[sectionIndex];
+    const name = sectionLabel(section?.heading ?? "", sectionIndex, section?.hidden);
     for (const id of ids) placedIn[id] = name;
   });
+  const labels = editorSections.map((section, index) => sectionLabel(section.heading, index, section.hidden));
 
   function canAddTo(index: number) {
     const here = new Set(placement.sections[index]);
-    return [...selected].some((id) => !here.has(id));
+    return [...selected].some((id) => id !== coverId && !here.has(id));
   }
 
   return (
     <div className="letter-sections">
+      <input type="hidden" name="sectionCount" value={editorSections.length} />
+      <input type="hidden" name="coverAssetId" value={coverId} />
+      <CoverPicker
+        images={images}
+        coverId={coverId}
+        placedIn={placedIn}
+        onChoose={chooseCover}
+        onView={(asset, list) => viewer.open(asset, list)}
+      />
       <div hidden>
         {placement.sections.map((ids, index) =>
           ids.map((id) => (
-            <input key={`${sections[index]?.id ?? index}-${id}`} type="hidden" name={`section-assets-${index}`} value={id} />
+            <input key={`${editorSections[index]?.id ?? index}-${id}`} type="hidden" name={`section-assets-${index}`} value={id} />
           )),
         )}
       </div>
 
-      {sections.map((section, index) => {
+      {editorSections.map((section, index) => {
         const ids = placement.sections[index] ?? [];
         const selectedHere = ids.filter((id) => selected.has(id));
-        const label = sectionLabel(headings[index] ?? "", index);
+        const label = sectionLabel(section.heading, index, section.hidden);
         const candidates = idsNotInSection(placement, orderedIds, index).flatMap((id) => {
+          if (id === coverId) return [];
           const asset = byId.get(id);
           return asset ? [asset] : [];
         });
         const adderOpen = adderIndex === index;
         return (
-          <fieldset className="section-card" id={`letter-section-${section.id}`} key={section.id}>
+          <fieldset
+            className={section.hidden ? "section-card is-hidden" : "section-card"}
+            id={`letter-section-${section.id}`}
+            key={section.id}
+            aria-label={label}
+          >
+            <div className="row section-toolbar">
+              <span className="quiet-label">{sectionLabel(section.heading, index)}</span>
+              {section.hidden ? <span className="pill archived">Hidden</span> : null}
+              <button
+                type="button"
+                className="btn secondary"
+                aria-pressed={section.hidden}
+                onClick={() => toggleHidden(index)}
+              >
+                {section.hidden ? "Show on the letter" : "Hide from the letter"}
+              </button>
+              {pendingRemove === index ? (
+                <>
+                  <button type="button" className="btn danger" onClick={() => removeSectionAt(index)}>
+                    Remove this section
+                  </button>
+                  <button type="button" className="text-button" onClick={() => setPendingRemove(null)}>
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button type="button" className="btn danger" onClick={() => setPendingRemove(index)}>
+                  Remove
+                </button>
+              )}
+            </div>
             <input type="hidden" name={`section-id-${index}`} value={section.id} />
+            <input type="hidden" name={`section-hidden-${index}`} value={section.hidden ? "1" : "0"} />
             <label className="field">
               <span>Section heading</span>
               <input
                 name={`section-heading-${index}`}
-                value={headings[index] ?? ""}
-                onChange={(event) =>
-                  setHeadings((current) => current.map((heading, headingIndex) => (headingIndex === index ? event.target.value : heading)))
-                }
+                value={section.heading}
+                onChange={(event) => updateSection(index, { heading: event.target.value })}
               />
             </label>
             <label className="field">
               <span>Section text</span>
               <textarea
                 name={`section-body-${index}`}
-                value={bodies[index] ?? ""}
-                onChange={(event) =>
-                  setBodies((current) => current.map((body, bodyIndex) => (bodyIndex === index ? event.target.value : body)))
-                }
+                value={section.body}
+                onChange={(event) => updateSection(index, { body: event.target.value })}
               />
             </label>
             <div className="stack">
@@ -385,10 +591,10 @@ export function LetterSections({
                     aria-controls={`section-add-${section.id}`}
                     onClick={() => setAdderIndex((current) => (current === index ? null : index))}
                   >
-                    {adderOpen ? "Hide files" : "Add photos and videos"}
+                    {adderOpen ? "Close" : "Add photos and videos"}
                   </button>
                 ) : assets.length > 0 ? (
-                  <span className="muted">All included files are in this section.</span>
+                  <span className="muted">Every other included file is already in this section.</span>
                 ) : null}
                 {selectedHere.length > 0 ? (
                   <button type="button" className="btn secondary" onClick={() => removeIds(index, selectedHere)}>
@@ -449,17 +655,24 @@ export function LetterSections({
         );
       })}
 
+      <div className="row">
+        <button type="button" className="btn secondary" onClick={addBlankSection}>
+          Add a section
+        </button>
+      </div>
+
       <div className="stack">
         <p className="quiet-label">Photos still to place</p>
         <p className="muted">
-          Each photo or video goes in one section. On a section, choose Add photos and videos, or
-          select files here and add that group. Full size opens the whole picture. Anything left in
-          this tray still shows on the family page under More from the day.
+          Each photo or video goes in one section. The main image stays out of that list. On a
+          section, choose Add photos and videos, or select files here and add that group. Full size
+          opens the whole picture. Anything left in this tray still shows on the family page under
+          More from the day.
         </p>
-        {assets.length > 0 && sections.length > 0 ? (
+        {assets.length > 0 && editorSections.length > 0 ? (
           <PlaceBar
             selectedCount={selected.size}
-            labels={sections.map((section, index) => sectionLabel(headings[index] ?? "", index))}
+            labels={labels}
             canAdd={canAddTo}
             onAdd={addTo}
             onClear={() => {
@@ -473,7 +686,9 @@ export function LetterSections({
             No photos or videos are included yet. In <a href="#photos-library">Photos and videos</a>, check Include and save.
           </p>
         ) : placement.unassigned.length === 0 ? (
-          <p className="muted">Every included photo is in a section.</p>
+          <p className="muted">
+            {coverId ? "Every other included photo is in a section." : "Every included photo is in a section."}
+          </p>
         ) : (
           <>
             <div className="picker-tools">
@@ -539,10 +754,10 @@ export function LetterSections({
                 })}
               </div>
             )}
-            {placement.unassigned.length > 8 && sections.length > 0 ? (
+            {placement.unassigned.length > 8 && editorSections.length > 0 ? (
               <PlaceBar
                 selectedCount={selected.size}
-                labels={sections.map((section, index) => sectionLabel(headings[index] ?? "", index))}
+                labels={labels}
                 canAdd={canAddTo}
                 onAdd={addTo}
                 onClear={() => {
@@ -553,7 +768,7 @@ export function LetterSections({
             ) : null}
           </>
         )}
-        {assets.length > 0 && sections.length === 0 ? (
+        {assets.length > 0 && editorSections.length === 0 ? (
           <p className="muted">Add a section, then you can place photos in it.</p>
         ) : null}
       </div>

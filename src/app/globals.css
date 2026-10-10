@@ -635,6 +635,67 @@ textarea {
   scroll-margin-top: 1rem;
 }
 
+.section-card.is-hidden {
+  margin: 0;
+  padding: 0.9rem;
+  border: 1px dashed var(--line);
+  border-radius: 1rem;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+.section-toolbar {
+  justify-content: flex-start;
+}
+
+.cover-choice,
+.letter-cover {
+  margin: 0;
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-radius: 1.35rem;
+  padding: 0.5rem;
+  box-shadow: var(--shadow);
+}
+
+.letter-cover {
+  margin-bottom: 1.15rem;
+}
+
+.cover-choice {
+  max-width: 28rem;
+}
+
+.letter-cover img,
+.cover-choice img {
+  display: block;
+  width: 100%;
+  border-radius: 1rem;
+  background: #efe7da;
+}
+
+.letter-cover img {
+  max-height: min(72vh, 40rem);
+  object-fit: contain;
+}
+
+.cover-choice img {
+  max-height: 18rem;
+  object-fit: contain;
+}
+
+.letter-cover figcaption,
+.cover-choice figcaption {
+  margin: 0.45rem 0.4rem 0.15rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.cover-grid {
+  max-height: 18rem;
+  overflow: auto;
+  padding: 0.1rem;
+}
+
 .section-add-panel {
   display: grid;
   gap: 0.7rem;

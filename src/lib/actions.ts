@@ -6,8 +6,8 @@ import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { draftNewsletter } from "./ai";
 import { clearStaffSession, grantViewer, requireStaff, startStaffSession } from "./auth";
-import { emptyContent, type NewsletterContent } from "./content";
-import { findStaffByEmail, getIssue, getSettings, listAssets } from "./data";
+import { emptyContent, normalizeContent, type NewsletterContent } from "./content";
+import { findStaffByEmail, getIssue, getSettings, issueContent, listAssets } from "./data";
 import { dropboxAccessToken } from "./dropbox-account";
 import {
   isDropboxUrl,
@@ -398,18 +398,20 @@ function contentFromForm(formData: FormData, fallback: string): NewsletterConten
       id,
       heading: text(formData, `section-heading-${index}`).slice(0, 160),
       body: text(formData, `section-body-${index}`).slice(0, 4000),
+      hidden: text(formData, `section-hidden-${index}`) === "1",
       assetIds: formData
         .getAll(`section-assets-${index}`)
         .filter((value): value is string => typeof value === "string"),
     });
   }
-  return {
+  return normalizeContent({
     headline: text(formData, "headline").slice(0, 180) || fallback,
     subtitle: text(formData, "subtitle").slice(0, 220),
     intro: text(formData, "intro").slice(0, 4000),
+    coverAssetId: text(formData, "coverAssetId"),
     sections,
     closing: text(formData, "closing").slice(0, 2000),
-  };
+  });
 }
 
 export async function saveLetter(formData: FormData) {
@@ -426,25 +428,6 @@ export async function saveLetter(formData: FormData) {
   });
   revalidatePath(`/admin/issues/${id}`);
   redirect(`/admin/issues/${id}`);
-}
-
-export async function addSection(formData: FormData) {
-  await requireStaff();
-  const id = text(formData, "id");
-  const issue = await getIssue(id);
-  if (!issue) bounce("/admin", "That issue is gone.");
-  const content = contentFromForm(formData, issue.title);
-  content.sections.push({
-    id: randomUUID(),
-    heading: "",
-    body: "",
-    assetIds: [],
-  });
-  await withDb(async (db) => {
-    await db.update(issues).set({ content, updatedAt: new Date() }).where(eq(issues.id, id));
-  });
-  revalidatePath(`/admin/issues/${id}`);
-  redirect(`/admin/issues/${id}#letter`);
 }
 
 export async function writeDraft(formData: FormData) {
@@ -465,6 +448,7 @@ export async function writeDraft(formData: FormData) {
       notes,
       programName: settings.programName,
       assets: media,
+      coverAssetId: issueContent(issue).coverAssetId,
     });
   } catch {
     bounce(

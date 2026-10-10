@@ -128,8 +128,12 @@ export function NewsletterView({
   const byId = new Map(assets.map((asset) => [asset.id, asset]));
   const intro = paragraphs(content.intro);
   const closing = paragraphs(content.closing);
+  const cover = content.coverAssetId ? byId.get(content.coverAssetId) : undefined;
+  const lead = cover?.kind === "image" ? cover : undefined;
   const stories = content.sections.flatMap((section) => {
+    if (section.hidden) return [];
     const shots = section.assetIds.flatMap((id) => {
+      if (id === content.coverAssetId) return [];
       const asset = byId.get(id);
       return asset ? [asset] : [];
     });
@@ -148,6 +152,20 @@ export function NewsletterView({
   return (
     <div className="letter-page">
       <article className="newsletter">
+        {lead ? (
+          <figure className="letter-cover">
+            {/* Dropbox links expire and are not served through the image optimizer. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={lead.src}
+              alt={lead.caption ? "" : lead.name}
+              referrerPolicy="no-referrer"
+              decoding="async"
+              fetchPriority="high"
+            />
+            {lead.caption ? <figcaption>{lead.caption}</figcaption> : null}
+          </figure>
+        ) : null}
         <header className="letter-mast">
           <div className="letter-mast-copy">
             <div className="letter-meta">

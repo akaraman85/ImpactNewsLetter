@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { emptyContent, parseContent, placeUnusedAssets } from "./content.ts";
+import { emptyContent, normalizeContent, parseContent, placeUnusedAssets } from "./content.ts";
 import {
   canonicalSharedLink,
   dropboxPosterUrl,
@@ -25,6 +25,64 @@ test("parseContent keeps known sections and ignores junk", () => {
   assert.equal(content.headline, "Field day");
   assert.equal(content.sections.length, 1);
   assert.deepEqual(content.sections[0]?.assetIds, ["1"]);
+});
+
+test("parseContent keeps the main image and which sections are hidden", () => {
+  const content = parseContent({
+    headline: "Field day",
+    coverAssetId: " hero ",
+    sections: [
+      { id: "a", heading: "Races", body: "Fast.", assetIds: ["hero", "2"], hidden: true },
+      { id: "b", heading: "Snack", body: "", assetIds: ["2", "1"] },
+    ],
+  });
+  assert.equal(content.coverAssetId, "hero");
+  assert.equal(content.sections[0]?.hidden, true);
+  assert.deepEqual(content.sections[0]?.assetIds, ["2"]);
+  assert.equal(content.sections[1]?.hidden, false);
+  assert.deepEqual(content.sections[1]?.assetIds, ["1"]);
+});
+
+test("the main image is not treated as an unused photo", () => {
+  const placed = placeUnusedAssets(
+    normalizeContent({
+      headline: "Day",
+      subtitle: "",
+      intro: "",
+      closing: "",
+      coverAssetId: "photo-2",
+      sections: [{ id: "a", heading: "One", body: "", assetIds: ["photo-1", "photo-2"], hidden: false }],
+    }),
+    ["photo-1", "photo-2"],
+  );
+  assert.equal(placed.sections.length, 1);
+  assert.deepEqual(placed.sections[0]?.assetIds, ["photo-1"]);
+});
+
+test("a hidden more-from-the-day section does not swallow leftover photos", () => {
+  const placed = placeUnusedAssets(
+    {
+      headline: "Day",
+      subtitle: "",
+      intro: "",
+      closing: "",
+      coverAssetId: "",
+      sections: [
+        {
+          id: "more-from-the-day",
+          heading: "More from the day",
+          body: "",
+          assetIds: ["photo-1"],
+          hidden: true,
+        },
+      ],
+    },
+    ["photo-1", "photo-2"],
+  );
+  assert.equal(placed.sections.length, 2);
+  assert.equal(placed.sections[1]?.id, "more-from-the-day-open");
+  assert.equal(placed.sections[1]?.hidden, false);
+  assert.deepEqual(placed.sections[1]?.assetIds, ["photo-2"]);
 });
 
 test("empty content uses the fallback headline", () => {
@@ -95,6 +153,7 @@ test("photo dumps and video groups take the full width", () => {
   assert.equal(storyIsWide({ id: "section-1", imageCount: 3, videoCount: 0 }), true);
   assert.equal(storyIsWide({ id: "section-1", imageCount: 0, videoCount: 2 }), true);
   assert.equal(storyIsWide({ id: "more-from-the-day", imageCount: 1, videoCount: 0 }), true);
+  assert.equal(storyIsWide({ id: "more-from-the-day-open", imageCount: 1, videoCount: 0 }), true);
 });
 
 test("folder links and file kinds are recognized", () => {
