@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { draftNewsletter } from "./ai";
@@ -50,21 +50,31 @@ export async function setupStaff(formData: FormData) {
   if (!email.includes("@") || email.length > 200) bounce("/admin/setup", "Use a real email address.");
   if (password.length < 10) bounce("/admin/setup", "Use a password of at least 10 characters.");
 
-  const id = randomUUID();
-  const created = await withDb(async (db) => {
+  const id = await withDb(async (db) => {
     return db.transaction(async (tx) => {
-      const [row] = await tx.select({ count: sql<number>`count(*)::int` }).from(staffUsers);
-      if ((row?.count ?? 0) > 0) return false;
+      const [existing] = await tx
+        .select()
+        .from(staffUsers)
+        .where(eq(staffUsers.email, email))
+        .limit(1);
+      const passwordHash = hashPassword(password);
+      if (existing) {
+        await tx
+          .update(staffUsers)
+          .set({ name, passwordHash })
+          .where(eq(staffUsers.id, existing.id));
+        return existing.id;
+      }
+      const created = randomUUID();
       await tx.insert(staffUsers).values({
-        id,
+        id: created,
         email,
         name,
-        passwordHash: hashPassword(password),
+        passwordHash,
       });
-      return true;
+      return created;
     });
   });
-  if (!created) bounce("/admin/login", "A staff account already exists. Sign in.");
   await startStaffSession(id);
   redirect("/admin");
 }
