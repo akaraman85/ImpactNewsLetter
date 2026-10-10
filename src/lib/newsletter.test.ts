@@ -3,6 +3,7 @@ import test from "node:test";
 import { emptyContent, normalizeContent, parseContent, placeUnusedAssets } from "./content.ts";
 import {
   canonicalSharedLink,
+  dropboxDownloadUrl,
   dropboxPosterUrl,
   dropboxRawUrl,
   isFolderLink,
@@ -125,6 +126,22 @@ test("dropbox links become raw file urls", () => {
   const url = new URL(raw);
   assert.equal(url.searchParams.get("raw"), "1");
   assert.equal(url.searchParams.get("dl"), null);
+});
+
+test("a shared video link downloads the file instead of the preview page", () => {
+  const download = dropboxDownloadUrl(
+    "https://www.dropbox.com/scl/fi/abc/IMG_1802.mov?rlkey=xyz&raw=1",
+  );
+  assert.ok(download);
+  const url = new URL(download);
+  assert.equal(url.searchParams.get("dl"), "1");
+  assert.equal(url.searchParams.get("raw"), null);
+  assert.equal(url.searchParams.get("rlkey"), "xyz");
+  assert.equal(
+    dropboxDownloadUrl("https://dl.dropboxusercontent.com/apitl/clip.mov"),
+    "https://dl.dropboxusercontent.com/apitl/clip.mov",
+  );
+  assert.equal(dropboxDownloadUrl("https://example.com/clip.mov"), null);
 });
 
 test("local staff links stay on http and deployed links stay on https", () => {
