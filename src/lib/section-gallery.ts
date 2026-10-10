@@ -73,10 +73,11 @@ function captionText(asset: GalleryAsset) {
   return caption || undefined;
 }
 
+// Phone clips are .mov. Chrome will not request a source labeled video/quicktime,
+// so those files are offered as video/mp4, which Safari still plays.
 export function videoSourceType(name: string) {
   const extension = name.split(".").pop()?.toLowerCase() ?? "";
   if (extension === "webm") return "video/webm";
-  if (extension === "mov") return "video/quicktime";
   return "video/mp4";
 }
 

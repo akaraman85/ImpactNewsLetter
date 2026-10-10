@@ -1,6 +1,7 @@
 import { dropboxPosterUrl, sharedVideoUrl } from "./dropbox";
 import { previewSize } from "./image-preview";
 import { fetchPreviewJpeg } from "./preview-bytes";
+import { streamVideo } from "./video-stream";
 import { NextResponse } from "next/server";
 
 function safeReason(error: unknown) {
@@ -44,14 +45,7 @@ export async function assetMediaResponse(
     }
   }
   if (!readUrl) return unavailable();
-  if (asset.kind === "video") {
-    return NextResponse.redirect(readUrl, {
-      headers: {
-        "Cache-Control": "private, no-store",
-        "Referrer-Policy": "no-referrer",
-      },
-    });
-  }
+  if (asset.kind === "video") return streamVideo(request, readUrl, asset.name ?? "");
   const size = previewSize(requested);
   try {
     const jpeg = await fetchPreviewJpeg(readUrl, size);

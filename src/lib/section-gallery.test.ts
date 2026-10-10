@@ -77,7 +77,7 @@ test("lightbox slides use the display photo and a playable video file", () => {
   assert.equal(slides[1]?.type, "video");
   if (slides[1]?.type !== "video") return;
   assert.equal(slides[1].poster, "/api/media/token/clip?size=display");
-  assert.deepEqual(slides[1].sources, [{ src: "/api/media/token/clip", type: "video/quicktime" }]);
+  assert.deepEqual(slides[1].sources, [{ src: "/api/media/token/clip", type: "video/mp4" }]);
   assert.equal(slides[1].description, undefined);
   assert.equal(videoSourceType("game.mp4"), "video/mp4");
   assert.equal(videoSourceType("game.m4v"), "video/mp4");

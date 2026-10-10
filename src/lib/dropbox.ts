@@ -53,6 +53,24 @@ export function dropboxRawUrl(value: string) {
   }
 }
 
+// `raw=1` is how a photo is embedded. A video shared that way comes back as the
+// Dropbox preview page, so playback asks for the file itself.
+export function dropboxDownloadUrl(value: string) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.replace(/^www\./, "");
+    if (host.endsWith("dropboxusercontent.com")) return url.toString();
+    if (host !== "dropbox.com") return null;
+    url.hostname = "www.dropbox.com";
+    url.protocol = "https:";
+    url.searchParams.delete("raw");
+    url.searchParams.set("dl", "1");
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function dropboxPosterUrl(value: string, size: PreviewSize) {
   let url: URL;
   try {
@@ -136,7 +154,7 @@ const SHARED_FILE_URL =
   /https:\/\/(?:www\.)?dropbox\.com\/(?:scl\/f[io]|sh)\/[A-Za-z0-9_./%-]+\?[A-Za-z0-9_=&%.-]*/g;
 const CONTINUATION_VOUCHER =
   /\{"prog":\s*"(?:\\.|[^"\\])*"\s*,\s*"sig":\s*"(?:\\.|[^"\\])*"\s*\}/;
-const BROWSER_UA =
+export const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 const MAX_SHARED_PAGES = 40;
 
