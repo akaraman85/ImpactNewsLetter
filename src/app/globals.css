@@ -1261,3 +1261,172 @@ textarea {
     transition: none;
   }
 }
+
+.print-bar {
+  width: min(1120px, calc(100% - 2rem));
+  margin: 0 auto 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem 0.9rem;
+}
+
+.print-bar p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.print-photos {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  width: 7.5in;
+  pointer-events: none;
+}
+
+.print-photos img {
+  width: 2.3in;
+  height: 2.05in;
+  object-fit: cover;
+}
+
+@media print {
+  @page {
+    size: letter;
+    margin: 0.48in;
+  }
+
+  html,
+  body {
+    background: white !important;
+    min-height: 0 !important;
+  }
+
+  .letter-page {
+    min-height: 0;
+    padding: 0;
+    background: white !important;
+  }
+
+  .newsletter {
+    width: auto;
+  }
+
+  .print-bar,
+  .letter-cover,
+  .mosaic,
+  .private-note,
+  .swoosh {
+    display: none !important;
+  }
+
+  .letter-mast {
+    display: block;
+    margin-bottom: 0.12in;
+  }
+
+  .newsletter h1 {
+    font-size: 22pt;
+    line-height: 1.05;
+    margin: 0.03in 0 0;
+  }
+
+  .newsletter .lede {
+    font-size: 11pt;
+    line-height: 1.3;
+  }
+
+  .date-stamp {
+    transform: none;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .intro-card {
+    margin-top: 0.1in;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .intro-card .intro {
+    font-size: 11pt;
+    line-height: 1.32;
+    margin: 0 0 0.06in;
+  }
+
+  .letter-spread {
+    display: block;
+  }
+
+  .letter-story,
+  .letter-story.tone-1,
+  .letter-story.tone-2 {
+    break-inside: avoid;
+    margin: 0;
+    padding: 0.05in 0 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent !important;
+  }
+
+  .story-index {
+    display: none;
+  }
+
+  .story-heading {
+    margin-bottom: 0.02in;
+  }
+
+  .story-heading h2 {
+    font-size: 12.5pt;
+    line-height: 1.2;
+  }
+
+  .letter-story .body {
+    font-size: 11pt;
+    line-height: 1.3;
+    margin: 0;
+  }
+
+  .letter-close {
+    margin-top: 0.1in;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  .letter-close .kicker {
+    margin: 0;
+    color: var(--pine);
+  }
+
+  .letter-close .closing {
+    max-width: none;
+    font-size: 12pt;
+    line-height: 1.3;
+    margin: 0.03in 0 0;
+  }
+
+  .print-photos {
+    position: static;
+    left: auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.12in;
+    width: auto;
+    margin-top: 0.16in;
+    break-inside: avoid;
+  }
+
+  .print-photos img {
+    display: block;
+    width: 100%;
+    height: 2.05in;
+    object-fit: cover;
+  }
+}
