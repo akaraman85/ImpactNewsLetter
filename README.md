@@ -17,7 +17,7 @@ Photos stay in Dropbox. The app stores the file reference and asks Dropbox for a
 
 Sign in at `/admin`. The public first-visit signup is closed. `ADMIN_OWNER_EMAIL` is the only address that can add staff from Settings.
 
-If the staff table is ever empty, set `ADMIN_SETUP_CODE` to at least 12 characters as well. The setup page then accepts one account, and only when the email matches `ADMIN_OWNER_EMAIL` and the code matches. Leave `ADMIN_SETUP_CODE` unset to keep that page closed.
+Set `ADMIN_SETUP_CODE` to at least 12 characters when the owner needs to create that account or replace a lost password. `/admin/setup` then accepts only `ADMIN_OWNER_EMAIL` plus that code. Leave `ADMIN_SETUP_CODE` unset to keep the page closed.
 
 ## Dropbox
 
@@ -45,7 +45,7 @@ Copy `.env.example` to `.env.local`.
 - `DATABASE_URL` is the Neon pooled connection string.
 - `AUTH_SECRET` is a long random string. It signs staff sessions and encrypts the Dropbox refresh token and family links.
 - `ADMIN_OWNER_EMAIL` is the only address that can create staff accounts.
-- `ADMIN_SETUP_CODE` is optional. Leave it unset. Set it only to let that owner create the first account.
+- `ADMIN_SETUP_CODE` is optional. Leave it unset. Set a code of at least 12 characters so the owner can create or reset that account at `/admin/setup`.
 - `AI_GATEWAY_API_KEY` is for local drafts. On Vercel, the AI Gateway authenticates with the project.
 
 The draft model defaults to `anthropic/claude-sonnet-5.5`.

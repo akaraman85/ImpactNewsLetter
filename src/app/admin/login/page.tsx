@@ -53,6 +53,11 @@ export default async function LoginPage({
         </label>
         <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
       </form>
+      {staffSignupOpen() ? (
+        <p className="muted">
+          <a href="/admin/setup">Create or reset the owner account</a>
+        </p>
+      ) : null}
     </main>
   );
 }
