@@ -1,5 +1,6 @@
 import { paragraphs, type NewsletterContent, type NewsletterSection } from "@/lib/content";
-import { planStoryLayouts, storyIsWide } from "@/lib/newsletter-layout";
+import { planStoryLayouts, selectPrintImages, storyIsWide } from "@/lib/newsletter-layout";
+import { PrintButton } from "./print-button";
 import { SectionGallery } from "./section-gallery";
 
 export type ViewAsset = {
@@ -114,8 +115,17 @@ export function NewsletterView({
       }),
     ),
   );
+  const printImages = selectPrintImages(content, assets);
   return (
     <div className="letter-page">
+      <div className="print-bar">
+        <PrintButton />
+        <p>
+          {printImages.length > 0
+            ? "Prints the letter and a few photos on one page."
+            : "Prints the letter on one page."}
+        </p>
+      </div>
       <article className="newsletter">
         {lead ? (
           <figure className="letter-cover">
@@ -176,6 +186,21 @@ export function NewsletterView({
               </p>
             ))}
           </footer>
+        ) : null}
+        {printImages.length > 0 ? (
+          <div className="print-photos" aria-hidden="true">
+            {printImages.map((asset) => (
+              // Dropbox links expire and are not served through the image optimizer.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={asset.id}
+                src={asset.src}
+                alt={asset.caption || "Photo from the day"}
+                referrerPolicy="no-referrer"
+                decoding="async"
+              />
+            ))}
+          </div>
         ) : null}
         <p className="private-note">
           This page is for families. The link is the key, so please keep it inside the people it was sent to.

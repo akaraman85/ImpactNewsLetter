@@ -13,7 +13,7 @@ import {
   sharedFolderRequest,
 } from "./dropbox.ts";
 import { requestOrigin } from "./format.ts";
-import { planStoryLayouts, storyIsWide } from "./newsletter-layout.ts";
+import { planStoryLayouts, selectPrintImages, storyIsWide } from "./newsletter-layout.ts";
 
 test("parseContent keeps known sections and ignores junk", () => {
   const content = parseContent(
@@ -105,6 +105,57 @@ test("short stories sit in pairs and a leftover spans the row", () => {
   assert.deepEqual(planStoryLayouts([true, false, false]), ["feature", "card", "card"]);
   assert.deepEqual(planStoryLayouts([false, true, false]), ["feature", "feature", "feature"]);
   assert.deepEqual(planStoryLayouts([false]), ["feature"]);
+});
+
+test("a printed page keeps the cover and one photo from each part of the day", () => {
+  const assets = [
+    { id: "cover", kind: "image" as const },
+    { id: "clip", kind: "video" as const },
+    { id: "instruments", kind: "image" as const },
+    { id: "instruments-2", kind: "image" as const },
+    { id: "rooms", kind: "image" as const },
+    { id: "ending", kind: "image" as const },
+    { id: "hidden-shot", kind: "image" as const },
+  ];
+  const picked = selectPrintImages(
+    {
+      coverAssetId: "cover",
+      sections: [
+        { hidden: false, assetIds: ["clip", "instruments", "instruments-2", "cover"] },
+        { hidden: false, assetIds: ["rooms"] },
+        { hidden: true, assetIds: ["hidden-shot"] },
+        { hidden: false, assetIds: ["ending"] },
+      ],
+    },
+    assets,
+  );
+  assert.deepEqual(
+    picked.map((asset) => asset.id),
+    ["cover", "instruments", "rooms"],
+  );
+});
+
+test("a printed page fills out to three photos when a section has only video", () => {
+  const assets = [
+    { id: "clip", kind: "video" as const },
+    { id: "first", kind: "image" as const },
+    { id: "second", kind: "image" as const },
+    { id: "third", kind: "image" as const },
+  ];
+  const picked = selectPrintImages(
+    {
+      coverAssetId: "",
+      sections: [
+        { hidden: false, assetIds: ["clip"] },
+        { hidden: false, assetIds: ["first", "second", "third"] },
+      ],
+    },
+    assets,
+  );
+  assert.deepEqual(
+    picked.map((asset) => asset.id),
+    ["first", "second", "third"],
+  );
 });
 
 test("photo dumps and video groups take the full width", () => {
