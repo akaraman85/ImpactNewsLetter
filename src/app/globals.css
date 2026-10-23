@@ -1291,6 +1291,99 @@ textarea {
   object-fit: cover;
 }
 
+.wrap:has(.issue-workspace) {
+  width: min(1280px, calc(100% - 2rem));
+}
+
+.issue-workspace {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+.revise-panel textarea {
+  min-height: 4.5rem;
+}
+
+.revise-log {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  min-height: 6rem;
+  max-height: 28rem;
+  overflow: auto;
+}
+
+.revise-bubble {
+  margin: 0;
+  border-radius: 0.9rem;
+  padding: 0.7rem 0.8rem;
+  white-space: pre-wrap;
+}
+
+.revise-bubble.user {
+  background: var(--moss);
+}
+
+.revise-bubble.assistant {
+  background: white;
+  border: 1px solid var(--line);
+}
+
+.revise-proposal {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  padding: 0.75rem;
+}
+
+.revise-proposal h3,
+.revise-proposal p {
+  margin: 0;
+}
+
+.revise-excerpt {
+  white-space: pre-wrap;
+  max-height: 8rem;
+  overflow: auto;
+}
+
+.revise-sections {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+@media (min-width: 1100px) {
+  .issue-workspace {
+    grid-template-columns: minmax(0, 1fr) 22.5rem;
+  }
+
+  .issue-main {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .revise-panel {
+    grid-column: 2;
+    grid-row: 1;
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+  }
+}
+
+@media print {
+  .revise-panel {
+    display: none !important;
+  }
+}
+
 @media print {
   @page {
     size: letter;

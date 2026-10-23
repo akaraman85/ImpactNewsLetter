@@ -6,7 +6,8 @@ import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { draftNewsletter } from "./ai";
 import { clearStaffSession, grantViewer, requireStaff, startStaffSession } from "./auth";
-import { emptyContent, normalizeContent, type NewsletterContent } from "./content";
+import { emptyContent } from "./content";
+import { contentFromLetterForm } from "./letter-proposal";
 import { findStaffByEmail, getIssue, getSettings, issueContent, listAssets } from "./data";
 import { dropboxAccessToken } from "./dropbox-account";
 import {
@@ -389,37 +390,12 @@ export async function removeAsset(formData: FormData) {
   redirect(`/admin/issues/${id}`);
 }
 
-function contentFromForm(formData: FormData, fallback: string): NewsletterContent {
-  const sectionCount = Number(text(formData, "sectionCount") || "0");
-  const sections = [];
-  for (let index = 0; index < sectionCount; index += 1) {
-    const id = text(formData, `section-id-${index}`) || `section-${index + 1}`;
-    sections.push({
-      id,
-      heading: text(formData, `section-heading-${index}`).slice(0, 160),
-      body: text(formData, `section-body-${index}`).slice(0, 4000),
-      hidden: text(formData, `section-hidden-${index}`) === "1",
-      assetIds: formData
-        .getAll(`section-assets-${index}`)
-        .filter((value): value is string => typeof value === "string"),
-    });
-  }
-  return normalizeContent({
-    headline: text(formData, "headline").slice(0, 180) || fallback,
-    subtitle: text(formData, "subtitle").slice(0, 220),
-    intro: text(formData, "intro").slice(0, 4000),
-    coverAssetId: text(formData, "coverAssetId"),
-    sections,
-    closing: text(formData, "closing").slice(0, 2000),
-  });
-}
-
 export async function saveLetter(formData: FormData) {
   await requireStaff();
   const id = text(formData, "id");
   const issue = await getIssue(id);
   if (!issue) bounce("/admin", "That issue is gone.");
-  const content = contentFromForm(formData, issue.title);
+  const content = contentFromLetterForm(formData, issue.title);
   await withDb(async (db) => {
     await db
       .update(issues)
