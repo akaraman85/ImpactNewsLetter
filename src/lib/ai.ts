@@ -2,6 +2,7 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import { normalizeContent, type NewsletterContent } from "./content";
 import type { Asset } from "./data";
+import { draftInstructions } from "./newsletter-rules";
 
 const sectionSchema = z.object({
   heading: z.string(),
@@ -18,6 +19,10 @@ const draftSchema = z.object({
 });
 
 const DEFAULT_MODEL = "anthropic/claude-sonnet-5.5";
+
+export function newsletterModel() {
+  return process.env.NEWSLETTER_MODEL?.trim() || DEFAULT_MODEL;
+}
 
 export async function draftNewsletter(input: {
   title: string;
@@ -36,21 +41,13 @@ export async function draftNewsletter(input: {
     .join("\n");
 
   const { output } = await generateText({
-    model: process.env.NEWSLETTER_MODEL || DEFAULT_MODEL,
+    model: newsletterModel(),
     output: Output.object({
       schema: draftSchema,
       name: "newsletter",
       description: "A short parent newsletter composed only from the supplied notes and photo ids.",
     }),
-    instructions: [
-      `You write a short newsletter for families in ${input.programName}, a program for elementary students.`,
-      "Use only facts that appear in the staff notes. Do not invent names, scores, awards, quotes, or events.",
-      "Do not add a child's full name unless the notes already include it.",
-      "Write the way a trusted teacher would write to parents: warm, specific, and brief.",
-      "Group the photos into a few sections. Use each supplied photo id at most once.",
-      "Do not add a catch-all section for leftover photos, including one titled More from the day. Leave a photo out when it does not belong with a story.",
-      "If the notes are thin, keep the writing thin too. A short true note is better than a polished invention.",
-    ].join(" "),
+    instructions: draftInstructions(input.programName),
     prompt: [
       `Issue title: ${input.title}`,
       `Event date: ${input.eventDate || "not set"}`,

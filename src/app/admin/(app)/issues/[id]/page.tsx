@@ -2,6 +2,7 @@ import { Notice } from "@/components/admin-shell";
 import { CopyLink } from "@/components/copy-link";
 import { LetterSections } from "@/components/letter-sections";
 import { MediaLibrary, type EditorMedia } from "@/components/media-library";
+import { ReviseLetterPanel } from "@/components/revise-letter-panel";
 import { SubmitButton } from "@/components/submit-button";
 import {
   addMediaLink,
@@ -60,7 +61,18 @@ export default async function IssuePage({
   const activeLinks = links.filter((link) => !link.revokedAt);
 
   return (
-    <>
+    <div className="issue-workspace">
+      <ReviseLetterPanel
+        issueId={issue.id}
+        content={content}
+        assets={media.map((asset) => ({
+          id: asset.id,
+          name: asset.name,
+          kind: asset.kind,
+          included: asset.included,
+        }))}
+      />
+      <div className="issue-main stack">
       <div className="row" style={{ justifyContent: "space-between" }}>
         <div>
           <p className="kicker">{formatEventDate(issue.eventDate) || "Undated"}</p>
@@ -270,6 +282,7 @@ export default async function IssuePage({
           </SubmitButton>
         </form>
       </section>
-    </>
+      </div>
+    </div>
   );
 }
